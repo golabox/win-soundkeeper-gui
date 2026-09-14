@@ -1,0 +1,69 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>SoundKeeper.GUI</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\Main.ico</ApplicationIcon>
+    <Platforms>x64;ARM64</Platforms>
+    <PlatformTarget>$(Platform)</PlatformTarget>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <PublishDir Condition="'$(RuntimeIdentifier)' != ''">$(MSBuildProjectDirectory)\publish\$(RuntimeIdentifier)\</PublishDir>
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <NeutralLanguage>fr-FR</NeutralLanguage>
+    <LangVersion>latest</LangVersion>
+    <Version>0.1.0</Version>
+    <AssemblyName>SoundKeeper.GUI</AssemblyName>
+    <DefaultItemExcludes>$(DefaultItemExcludes);publish\**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.4.0" />
+  </ItemGroup>
+
+  <Target Name="CopySoundKeeperEngine" AfterTargets="Build">
+    <PropertyGroup>
+      <EngineFile Condition="'$(Platform)' == 'x64'">$(MSBuildProjectDirectory)\..\Bin\SoundKeeper64.exe</EngineFile>
+      <EngineFile Condition="'$(Platform)' == 'ARM64'">$(MSBuildProjectDirectory)\..\Bin\SoundKeeperARM64.exe</EngineFile>
+    </PropertyGroup>
+    <MakeDir Directories="$(OutDir)Engine" Condition="Exists('$(EngineFile)')" />
+    <Copy SourceFiles="$(EngineFile)" DestinationFolder="$(OutDir)Engine" SkipUnchangedFiles="true" Condition="Exists('$(EngineFile)')" />
+  </Target>
+
+  <Target Name="CopyLocalizationResources" AfterTargets="Build">
+    <ItemGroup>
+      <LocalizationResource Include="$(MSBuildProjectDirectory)\Strings\**\Resources.resw" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(LocalizationResource)"
+      DestinationFiles="@(LocalizationResource->'$(TargetDir)Strings\%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="CopyWinUiResourcesToPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <WinUiPublishResource Include="$(TargetDir)*.xbf" />
+      <WinUiPublishResource Include="$(TargetDir)$(AssemblyName).pri" />
+      <!-- Golabox resource dictionaries merged by App.xaml (ms-appx:///Themes/*.xaml) -->
+      <WinUiThemePublishResource Include="$(TargetDir)Themes\*.xbf" />
+      <EnginePublishResource Include="$(TargetDir)Engine\*" />
+      <LocalizationPublishResource Include="$(MSBuildProjectDirectory)\Strings\**\Resources.resw" />
+    </ItemGroup>
+    <Copy SourceFiles="@(WinUiPublishResource)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+    <MakeDir Directories="$(PublishDir)Themes" Condition="'@(WinUiThemePublishResource)' != ''" />
+    <Copy SourceFiles="@(WinUiThemePublishResource)" DestinationFolder="$(PublishDir)Themes" SkipUnchangedFiles="true" />
+    <MakeDir Directories="$(PublishDir)Engine" Condition="'@(EnginePublishResource)' != ''" />
+    <Copy SourceFiles="@(EnginePublishResource)" DestinationFolder="$(PublishDir)Engine" SkipUnchangedFiles="true" />
+    <Copy
+      SourceFiles="@(LocalizationPublishResource)"
+      DestinationFiles="@(LocalizationPublishResource->'$(PublishDir)Strings\%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
+  </Target>
+</Project>

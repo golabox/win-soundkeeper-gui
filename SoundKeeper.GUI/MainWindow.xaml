@@ -1,0 +1,607 @@
+<Window
+    x:Class="SoundKeeper.GUI.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="Sound Keeper GUI">
+
+    <!-- Golabox Shell B: native title bar, native NavigationView (PaneDisplayMode=Auto), one content column capped at
+         ContentMaxWidth. No section cards: only rows are cards. Compact (< BpCompact) is driven from the width the
+         pages really get, in code-behind (PagesHost.SizeChanged), like QuickOutput. -->
+    <Grid x:Name="RootGrid" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <!-- Kept invisible: source of the themed foreground the system title bar is painted with. -->
+        <TextBlock x:Name="WindowTitleText" Text="Sound Keeper GUI" Foreground="{ThemeResource TextFillColorPrimaryBrush}" Visibility="Collapsed" />
+
+        <NavigationView
+            x:Name="MainNavigation"
+            PaneDisplayMode="Auto"
+            IsBackButtonVisible="Collapsed"
+            IsSettingsVisible="False"
+            AlwaysShowHeader="False"
+            OpenPaneLength="{StaticResource NavPaneWidth}"
+            CompactModeThresholdWidth="{StaticResource BpCompact}"
+            ExpandedModeThresholdWidth="{StaticResource BpWide}">
+
+            <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="GeneralNavigationItem" Content="Général" Tag="General" IsSelected="True">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE80F;" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="AdvancedNavigationItem" Content="Avancé" Tag="Advanced">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE713;" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="LogsNavigationItem" Content="Journaux" Tag="Logs">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE8A5;" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="AboutNavigationItem" Content="À propos" Tag="About">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE946;" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+
+            <Grid x:Name="PagesHost">
+
+                <!-- ============================== Général ============================== -->
+                <ScrollViewer x:Name="GeneralPage" HorizontalScrollBarVisibility="Disabled" HorizontalScrollMode="Disabled" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Enabled">
+                    <Border x:Name="GeneralPageHost" Padding="{StaticResource PagePaddingDefault}">
+                        <StackPanel MaxWidth="{StaticResource ContentMaxWidth}">
+                            <TextBlock x:Name="GeneralPageTitle" Text="Général" Style="{StaticResource GolaboxPageTitleTextStyle}" AutomationProperties.HeadingLevel="Level1" />
+
+                            <!-- InfoBarRestart: anchored under the page title, not closable while the condition lasts -->
+                            <InfoBar x:Name="LanguageRestartBar" Severity="Informational" IsOpen="False" IsClosable="False" Visibility="Collapsed" Margin="0,24,0,0"
+                                     Message="{x:Bind ViewModel.LanguageRestartMessage}">
+                                <InfoBar.ActionButton>
+                                    <Button x:Name="RestartNowButton" Content="Redémarrer maintenant" Click="RestartNow_Click" />
+                                </InfoBar.ActionButton>
+                            </InfoBar>
+
+                            <!-- Moteur -->
+                            <StackPanel Style="{StaticResource GolaboxSectionStyle}">
+                                <TextBlock x:Name="EngineSectionTitle" Text="Moteur" Style="{StaticResource GolaboxSectionHeaderTextStyle}" Margin="{StaticResource SectionHeaderMargin}" AutomationProperties.HeadingLevel="Level2" />
+                                <StackPanel Style="{StaticResource GolaboxRowStackStyle}">
+                                    <!-- SettingRow.Status + primary action -->
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="{x:Bind ViewModel.StatusText, Mode=OneWay}" Style="{StaticResource GolaboxBodyTextStyle}" />
+                                                <TextBlock Text="{x:Bind ViewModel.StatusDetail, Mode=OneWay}" Style="{StaticResource GolaboxCaptionTextStyle}" Margin="0,4,0,0" />
+                                            </StackPanel>
+                                            <Grid x:Name="EngineActionHost" Grid.Column="1" ColumnSpacing="{StaticResource ButtonGroupGap}" VerticalAlignment="Center">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                <ProgressRing Width="{StaticResource IconRow}" Height="{StaticResource IconRow}" IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}" Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay}" />
+                                                <Button Grid.Column="1" Style="{StaticResource GolaboxAccentActionButtonStyle}" HorizontalAlignment="Stretch"
+                                                        Command="{x:Bind ViewModel.ToggleEngineCommand}" Content="{x:Bind ViewModel.PrimaryActionText, Mode=OneWay}" />
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Périphériques -->
+                            <StackPanel Style="{StaticResource GolaboxSectionStyle}">
+                                <TextBlock x:Name="DevicesTitle" Text="Périphériques" Style="{StaticResource GolaboxSectionHeaderTextStyle}" Margin="{StaticResource SectionHeaderMargin}" AutomationProperties.HeadingLevel="Level2" />
+                                <StackPanel Style="{StaticResource GolaboxRowStackStyle}">
+                                    <!-- SettingRow.Select with description -->
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock x:Name="DeviceModeLabel" Text="Sorties audio" Style="{StaticResource GolaboxBodyTextStyle}" />
+                                                <TextBlock Text="{x:Bind ViewModel.DeviceDescription, Mode=OneWay}" Style="{StaticResource GolaboxCaptionTextStyle}" Margin="0,4,0,0" />
+                                            </StackPanel>
+                                            <ComboBox x:Name="DeviceModeCombo" Grid.Column="1" Width="{StaticResource ControlWidthSelectWide}" VerticalAlignment="Center"
+                                                      ItemsSource="{x:Bind ViewModel.DeviceChoices}" DisplayMemberPath="Label" SelectedIndex="{x:Bind ViewModel.DeviceModeIndex, Mode=TwoWay}"
+                                                      AutomationProperties.LabeledBy="{Binding ElementName=DeviceModeLabel}" />
+                                        </Grid>
+                                    </Border>
+                                    <!-- SettingRow.Link: leaves the app, OpenInNewWindow glyph -->
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <TextBlock x:Name="OpenAudioLabel" Text="Paramètres Son de Windows" Style="{StaticResource GolaboxBodyTextStyle}" VerticalAlignment="Center" />
+                                            <HyperlinkButton x:Name="OpenAudioLink" Grid.Column="1" VerticalAlignment="Center" Command="{x:Bind ViewModel.OpenAudioSettingsCommand}">
+                                                <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceXS}">
+                                                    <TextBlock x:Name="OpenAudioLinkText" Text="Ouvrir" />
+                                                    <FontIcon Glyph="&#xE8A7;" FontSize="{StaticResource IconStatus}" />
+                                                </StackPanel>
+                                            </HyperlinkButton>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Mode de fonctionnement -->
+                            <StackPanel Style="{StaticResource GolaboxSectionStyle}">
+                                <TextBlock x:Name="SignalTitle" Text="Mode de fonctionnement" Style="{StaticResource GolaboxSectionHeaderTextStyle}" Margin="{StaticResource SectionHeaderMargin}" AutomationProperties.HeadingLevel="Level2" />
+                                <StackPanel Style="{StaticResource GolaboxRowStackStyle}">
+                                    <!-- Warning: at the head of the section concerned -->
+                                    <InfoBar x:Name="AudibleWarning" IsOpen="True" IsClosable="False" Severity="Warning" Title="Prudence"
+                                             Message="Une fréquence ou une amplitude élevée peut produire un son audible." Visibility="{x:Bind ViewModel.AmplitudeVisibility, Mode=OneWay}" />
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock x:Name="SignalModeLabel" Text="Signal envoyé" Style="{StaticResource GolaboxBodyTextStyle}" />
+                                                <TextBlock Text="{x:Bind ViewModel.SignalDescription, Mode=OneWay}" Style="{StaticResource GolaboxCaptionTextStyle}" Margin="0,4,0,0" />
+                                            </StackPanel>
+                                            <ComboBox x:Name="SignalModeCombo" Grid.Column="1" Width="{StaticResource ControlWidthSelectWide}" VerticalAlignment="Center"
+                                                      ItemsSource="{x:Bind ViewModel.SignalChoices}" DisplayMemberPath="Label" SelectedIndex="{x:Bind ViewModel.SignalModeIndex, Mode=TwoWay}"
+                                                      AutomationProperties.LabeledBy="{Binding ElementName=SignalModeLabel}" />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}" Visibility="{x:Bind ViewModel.FrequencyVisibility, Mode=OneWay}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock x:Name="FrequencyLabel" Text="Fréquence (Hz)" Style="{StaticResource GolaboxBodyTextStyle}" />
+                                                <TextBlock Text="{x:Bind ViewModel.FrequencyDescription, Mode=OneWay}" Style="{StaticResource GolaboxCaptionTextStyle}" Margin="0,4,0,0" />
+                                            </StackPanel>
+                                            <NumberBox x:Name="FrequencyBox" Grid.Column="1" Width="{StaticResource ControlWidthSelect}" VerticalAlignment="Center" Minimum="0" Maximum="96000" SmallChange="1"
+                                                       SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.FrequencyHz, Mode=TwoWay}" AutomationProperties.LabeledBy="{Binding ElementName=FrequencyLabel}" />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}" Visibility="{x:Bind ViewModel.AmplitudeVisibility, Mode=OneWay}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <TextBlock x:Name="AmplitudeLabel" Text="Amplitude (%)" Style="{StaticResource GolaboxBodyTextStyle}" VerticalAlignment="Center" />
+                                            <NumberBox x:Name="AmplitudeBox" Grid.Column="1" Width="{StaticResource ControlWidthSelect}" VerticalAlignment="Center" Minimum="0" Maximum="100" SmallChange="0.1"
+                                                       SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.AmplitudePercent, Mode=TwoWay}" AutomationProperties.LabeledBy="{Binding ElementName=AmplitudeLabel}" />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}" Visibility="{x:Bind ViewModel.AmplitudeVisibility, Mode=OneWay}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <TextBlock x:Name="FadeLabel" Text="Fondu (s)" Style="{StaticResource GolaboxBodyTextStyle}" VerticalAlignment="Center" />
+                                            <NumberBox x:Name="FadeBox" Grid.Column="1" Width="{StaticResource ControlWidthSelect}" VerticalAlignment="Center" Minimum="0" Maximum="60" SmallChange="0.1"
+                                                       SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.FadeSeconds, Mode=TwoWay}" AutomationProperties.LabeledBy="{Binding ElementName=FadeLabel}" />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}" Visibility="{x:Bind ViewModel.TimingVisibility, Mode=OneWay}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <TextBlock x:Name="PlayLabel" Text="Durée du signal (s, 0 = continu)" Style="{StaticResource GolaboxBodyTextStyle}" VerticalAlignment="Center" />
+                                            <NumberBox x:Name="PlayBox" Grid.Column="1" Width="{StaticResource ControlWidthSelect}" VerticalAlignment="Center" Minimum="0" Maximum="86400"
+                                                       SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.PlaySeconds, Mode=TwoWay}" AutomationProperties.LabeledBy="{Binding ElementName=PlayLabel}" />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}" Visibility="{x:Bind ViewModel.TimingVisibility, Mode=OneWay}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <TextBlock x:Name="WaitLabel" Text="Pause entre signaux (s)" Style="{StaticResource GolaboxBodyTextStyle}" VerticalAlignment="Center" />
+                                            <NumberBox x:Name="WaitBox" Grid.Column="1" Width="{StaticResource ControlWidthSelect}" VerticalAlignment="Center" Minimum="0" Maximum="86400"
+                                                       SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.WaitSeconds, Mode=TwoWay}" AutomationProperties.LabeledBy="{Binding ElementName=WaitLabel}" />
+                                        </Grid>
+                                    </Border>
+                                    <!-- SettingRow.Action -->
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock x:Name="TestSignalLabel" Text="Tester le signal" Style="{StaticResource GolaboxBodyTextStyle}" />
+                                                <TextBlock Text="{x:Bind ViewModel.TestSignalDescription, Mode=OneWay}" Style="{StaticResource GolaboxCaptionTextStyle}" Margin="0,4,0,0" />
+                                            </StackPanel>
+                                            <Button x:Name="TestSignalButton" Grid.Column="1" Style="{StaticResource GolaboxActionButtonStyle}"
+                                                    Command="{x:Bind ViewModel.TestSignalCommand}" Content="{x:Bind ViewModel.TestSignalActionText, Mode=OneWay}" />
+                                        </Grid>
+                                    </Border>
+                                    <InfoBar x:Name="TestStatusBar" Severity="Informational" IsOpen="False" IsClosable="True" Visibility="Collapsed" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Veille et verrouillage -->
+                            <StackPanel Style="{StaticResource GolaboxSectionStyle}">
+                                <TextBlock x:Name="SleepTitle" Text="Veille et verrouillage" Style="{StaticResource GolaboxSectionHeaderTextStyle}" Margin="{StaticResource SectionHeaderMargin}" AutomationProperties.HeadingLevel="Level2" />
+                                <StackPanel Style="{StaticResource GolaboxRowStackStyle}">
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock x:Name="SleepLabel" Text="Quand suspendre le moteur" Style="{StaticResource GolaboxBodyTextStyle}" />
+                                                <TextBlock Text="{x:Bind ViewModel.SleepDescription, Mode=OneWay}" Style="{StaticResource GolaboxCaptionTextStyle}" Margin="0,4,0,0" />
+                                            </StackPanel>
+                                            <ComboBox x:Name="SleepCombo" Grid.Column="1" Width="{StaticResource ControlWidthSelectWide}" VerticalAlignment="Center"
+                                                      ItemsSource="{x:Bind ViewModel.SleepChoices}" DisplayMemberPath="Label" SelectedIndex="{x:Bind ViewModel.SleepBehaviorIndex, Mode=TwoWay}"
+                                                      AutomationProperties.LabeledBy="{Binding ElementName=SleepLabel}" />
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Langue et apparence -->
+                            <StackPanel Style="{StaticResource GolaboxSectionStyle}">
+                                <TextBlock x:Name="LanguageTitle" Text="Langue et apparence" Style="{StaticResource GolaboxSectionHeaderTextStyle}" Margin="{StaticResource SectionHeaderMargin}" AutomationProperties.HeadingLevel="Level2" />
+                                <StackPanel Style="{StaticResource GolaboxRowStackStyle}">
+                                    <!-- SettingRow.Select -->
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <TextBlock x:Name="LanguageLabel" Text="Langue de l’application" Style="{StaticResource GolaboxBodyTextStyle}" VerticalAlignment="Center" />
+                                            <ComboBox x:Name="LanguageCombo" Grid.Column="1" Width="{StaticResource ControlWidthSelect}" VerticalAlignment="Center"
+                                                      ItemsSource="{x:Bind ViewModel.LanguageChoices}" DisplayMemberPath="Label" SelectedIndex="{x:Bind ViewModel.LanguageIndex, Mode=TwoWay}"
+                                                      AutomationProperties.LabeledBy="{Binding ElementName=LanguageLabel}" />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <TextBlock x:Name="ThemeLabel" Text="Thème" Style="{StaticResource GolaboxBodyTextStyle}" VerticalAlignment="Center" />
+                                            <ComboBox x:Name="ThemeCombo" Grid.Column="1" Width="{StaticResource ControlWidthSelect}" VerticalAlignment="Center"
+                                                      ItemsSource="{x:Bind ViewModel.ThemeChoices}" DisplayMemberPath="Label" SelectedIndex="{x:Bind ViewModel.ThemeIndex, Mode=TwoWay}"
+                                                      AutomationProperties.LabeledBy="{Binding ElementName=ThemeLabel}" />
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Comportement Windows -->
+                            <StackPanel Style="{StaticResource GolaboxSectionStyle}">
+                                <TextBlock x:Name="WindowsTitle" Text="Comportement Windows" Style="{StaticResource GolaboxSectionHeaderTextStyle}" Margin="{StaticResource SectionHeaderMargin}" AutomationProperties.HeadingLevel="Level2" />
+                                <StackPanel Style="{StaticResource GolaboxRowStackStyle}">
+                                    <!-- SettingRow.Toggle: stays on the right in Compact -->
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <TextBlock x:Name="StartupLabel" Text="Lancer au démarrage de Windows" Style="{StaticResource GolaboxBodyTextStyle}" VerticalAlignment="Center" />
+                                            <ToggleSwitch x:Name="StartupToggle" Grid.Column="1" VerticalAlignment="Center" IsOn="{x:Bind ViewModel.StartWithWindows, Mode=TwoWay}"
+                                                          AutomationProperties.LabeledBy="{Binding ElementName=StartupLabel}" />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock x:Name="StartMinimizedLabel" Text="Démarrer minimisé" Style="{StaticResource GolaboxBodyTextStyle}" />
+                                                <TextBlock x:Name="StartMinimizedDescription" Style="{StaticResource GolaboxCaptionTextStyle}" Margin="0,4,0,0" />
+                                            </StackPanel>
+                                            <ToggleSwitch x:Name="StartMinimizedToggle" Grid.Column="1" VerticalAlignment="Center" IsOn="{x:Bind ViewModel.StartMinimized, Mode=TwoWay}"
+                                                          AutomationProperties.LabeledBy="{Binding ElementName=StartMinimizedLabel}" />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <TextBlock x:Name="MinimizeTrayLabel" Text="Réduire dans la zone de notification" Style="{StaticResource GolaboxBodyTextStyle}" VerticalAlignment="Center" />
+                                            <ToggleSwitch x:Name="MinimizeTrayToggle" Grid.Column="1" VerticalAlignment="Center" IsOn="{x:Bind ViewModel.MinimizeToTray, Mode=TwoWay}"
+                                                          AutomationProperties.LabeledBy="{Binding ElementName=MinimizeTrayLabel}" />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock x:Name="CloseTrayLabel" Text="Fermer vers la zone de notification" Style="{StaticResource GolaboxBodyTextStyle}" />
+                                                <TextBlock x:Name="CloseTrayDescription" Style="{StaticResource GolaboxCaptionTextStyle}" Margin="0,4,0,0" />
+                                            </StackPanel>
+                                            <ToggleSwitch x:Name="CloseTrayToggle" Grid.Column="1" VerticalAlignment="Center" IsOn="{x:Bind ViewModel.CloseToTray, Mode=TwoWay}"
+                                                          AutomationProperties.LabeledBy="{Binding ElementName=CloseTrayLabel}" />
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Surveillance -->
+                            <StackPanel Style="{StaticResource GolaboxSectionStyle}">
+                                <TextBlock x:Name="MonitoringTitle" Text="Surveillance" Style="{StaticResource GolaboxSectionHeaderTextStyle}" Margin="{StaticResource SectionHeaderMargin}" AutomationProperties.HeadingLevel="Level2" />
+                                <StackPanel Style="{StaticResource GolaboxRowStackStyle}">
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock x:Name="AutoRestartLabel" Text="Redémarrer automatiquement Sound Keeper en cas d’arrêt inattendu" Style="{StaticResource GolaboxBodyTextStyle}" />
+                                                <TextBlock x:Name="AutoRestartDescription" Style="{StaticResource GolaboxCaptionTextStyle}" Margin="0,4,0,0" />
+                                            </StackPanel>
+                                            <ToggleSwitch x:Name="AutoRestartToggle" Grid.Column="1" VerticalAlignment="Center" IsOn="{x:Bind ViewModel.AutoRestartEngine, Mode=TwoWay}"
+                                                          AutomationProperties.LabeledBy="{Binding ElementName=AutoRestartLabel}" />
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Maintenance -->
+                            <StackPanel Style="{StaticResource GolaboxSectionStyle}">
+                                <TextBlock x:Name="MaintenanceTitle" Text="Maintenance" Style="{StaticResource GolaboxSectionHeaderTextStyle}" Margin="{StaticResource SectionHeaderMargin}" AutomationProperties.HeadingLevel="Level2" />
+                                <StackPanel Style="{StaticResource GolaboxRowStackStyle}">
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <TextBlock x:Name="RestartApplicationLabel" Text="Redémarrer l’application" Style="{StaticResource GolaboxBodyTextStyle}" VerticalAlignment="Center" />
+                                            <Button x:Name="RestartApplicationButton" Grid.Column="1" Style="{StaticResource GolaboxActionButtonStyle}" Content="Redémarrer" Click="RestartNow_Click"
+                                                    AutomationProperties.LabeledBy="{Binding ElementName=RestartApplicationLabel}" />
+                                        </Grid>
+                                    </Border>
+                                    <!-- Destructive action: standard style + ContentDialog confirmation -->
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock x:Name="ResetSettingsLabel" Text="Réinitialiser les paramètres" Style="{StaticResource GolaboxBodyTextStyle}" />
+                                                <TextBlock x:Name="ResetSettingsDescription" Style="{StaticResource GolaboxCaptionTextStyle}" Margin="0,4,0,0" />
+                                            </StackPanel>
+                                            <Button x:Name="ResetSettingsButton" Grid.Column="1" Style="{StaticResource GolaboxActionButtonStyle}" Content="Réinitialiser" Click="ResetAndRestart_Click"
+                                                    AutomationProperties.LabeledBy="{Binding ElementName=ResetSettingsLabel}" />
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </ScrollViewer>
+
+                <!-- ============================== Avancé ============================== -->
+                <ScrollViewer x:Name="AdvancedPage" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled" HorizontalScrollMode="Disabled" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Enabled">
+                    <Border x:Name="AdvancedPageHost" Padding="{StaticResource PagePaddingDefault}">
+                        <StackPanel MaxWidth="{StaticResource ContentMaxWidth}">
+                            <TextBlock x:Name="AdvancedPageTitle" Text="Avancé" Style="{StaticResource GolaboxPageTitleTextStyle}" AutomationProperties.HeadingLevel="Level1" />
+                            <TextBlock x:Name="AdvancedPageIntro" Text="Options techniques et informations utiles pour le dépannage." Style="{StaticResource GolaboxBodyTextStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,4,0,0" />
+
+                            <!-- Options du moteur -->
+                            <StackPanel Style="{StaticResource GolaboxSectionStyle}">
+                                <TextBlock x:Name="EngineAdvancedTitle" Text="Options du moteur" Style="{StaticResource GolaboxSectionHeaderTextStyle}" Margin="{StaticResource SectionHeaderMargin}" AutomationProperties.HeadingLevel="Level2" />
+                                <StackPanel Style="{StaticResource GolaboxRowStackStyle}">
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock x:Name="RemoteLabel" Text="Inclure l’audio Bureau à distance" Style="{StaticResource GolaboxBodyTextStyle}" />
+                                                <TextBlock x:Name="RemoteDescription" Style="{StaticResource GolaboxCaptionTextStyle}" Margin="0,4,0,0" />
+                                            </StackPanel>
+                                            <ToggleSwitch x:Name="RemoteToggle" Grid.Column="1" VerticalAlignment="Center" IsOn="{x:Bind ViewModel.AllowRemoteAudio, Mode=TwoWay}"
+                                                          AutomationProperties.LabeledBy="{Binding ElementName=RemoteLabel}" />
+                                        </Grid>
+                                    </Border>
+                                    <!-- SettingRow.TextInput -->
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock x:Name="AdditionalArgumentsLabel" Text="Arguments supplémentaires" Style="{StaticResource GolaboxBodyTextStyle}" />
+                                                <TextBlock x:Name="AdditionalArgumentsDescription" Style="{StaticResource GolaboxCaptionTextStyle}" Margin="0,4,0,0" />
+                                            </StackPanel>
+                                            <TextBox x:Name="AdditionalArgumentsBox" Grid.Column="1" Width="{StaticResource ControlWidthSelectWide}" VerticalAlignment="Center" TextWrapping="Wrap"
+                                                     Text="{x:Bind ViewModel.AdditionalArguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     AutomationProperties.LabeledBy="{Binding ElementName=AdditionalArgumentsLabel}" />
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Commande effective: DiagnosticPanel (read-only mono surface + Copy, always together) -->
+                            <StackPanel Style="{StaticResource GolaboxSectionStyle}">
+                                <TextBlock x:Name="EffectiveCommandTitle" Text="Commande effective" Style="{StaticResource GolaboxSectionHeaderTextStyle}" Margin="{StaticResource SectionHeaderMargin}" AutomationProperties.HeadingLevel="Level2" />
+                                <StackPanel Style="{StaticResource GolaboxRowStackStyle}">
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBox x:Name="CommandPreviewBox" Style="{StaticResource GolaboxMonoSurfaceStyle}" Text="{x:Bind ViewModel.CommandPreview, Mode=OneWay}"
+                                                         AutomationProperties.LabeledBy="{Binding ElementName=EffectiveCommandTitle}" />
+                                                <TextBlock x:Name="EffectiveCommandIntro" Style="{StaticResource GolaboxCaptionTextStyle}" Margin="0,8,0,0" />
+                                            </StackPanel>
+                                            <Button x:Name="CopyCommandButton" Grid.Column="1" Style="{StaticResource GolaboxActionButtonStyle}" VerticalAlignment="Top" Command="{x:Bind ViewModel.CopyCommandPreviewCommand}">
+                                                <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceXS}">
+                                                    <FontIcon Glyph="&#xE8C8;" FontSize="{StaticResource IconInline}" />
+                                                    <TextBlock x:Name="CopyCommandText" Text="Copier" />
+                                                </StackPanel>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                    <InfoBar x:Name="AdvancedCopiedBar" Severity="Success" IsOpen="False" IsClosable="True" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Fichiers -->
+                            <StackPanel Style="{StaticResource GolaboxSectionStyle}">
+                                <TextBlock x:Name="FilesTitle" Text="Fichiers" Style="{StaticResource GolaboxSectionHeaderTextStyle}" Margin="{StaticResource SectionHeaderMargin}" AutomationProperties.HeadingLevel="Level2" />
+                                <StackPanel Style="{StaticResource GolaboxRowStackStyle}">
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock x:Name="SettingsFileLabel" Text="Fichier de configuration" Style="{StaticResource GolaboxBodyTextStyle}" />
+                                                <TextBlock Text="{x:Bind ViewModel.SettingsPath}" Style="{StaticResource GolaboxMonoCaptionTextStyle}" Margin="0,4,0,0" />
+                                            </StackPanel>
+                                            <Button x:Name="OpenSettingsFolderButton" Grid.Column="1" Style="{StaticResource GolaboxActionButtonStyle}" Content="Ouvrir le dossier"
+                                                    Command="{x:Bind ViewModel.OpenSettingsFolderCommand}" AutomationProperties.LabeledBy="{Binding ElementName=SettingsFileLabel}" />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock x:Name="EngineFileLabel" Text="Exécutable du moteur" Style="{StaticResource GolaboxBodyTextStyle}" />
+                                                <TextBlock Text="{x:Bind ViewModel.EnginePathText, Mode=OneWay}" Style="{StaticResource GolaboxMonoCaptionTextStyle}" Margin="0,4,0,0" />
+                                            </StackPanel>
+                                            <Button x:Name="OpenEngineFolderButton" Grid.Column="1" Style="{StaticResource GolaboxActionButtonStyle}" Content="Ouvrir le dossier"
+                                                    Command="{x:Bind ViewModel.OpenEngineFolderCommand}" AutomationProperties.LabeledBy="{Binding ElementName=EngineFileLabel}" />
+                                        </Grid>
+                                    </Border>
+                                    <!-- Diagnostic lives in À propos only: a local action points there -->
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <TextBlock x:Name="SystemInfoLabel" Text="Informations système complètes" Style="{StaticResource GolaboxBodyTextStyle}" VerticalAlignment="Center" />
+                                            <Button x:Name="ViewInAboutButton" Grid.Column="1" Style="{StaticResource GolaboxActionButtonStyle}" Content="Voir dans À propos" Click="ViewInAbout_Click" />
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </ScrollViewer>
+
+                <!-- ============================== Journaux (LogViewer) ============================== -->
+                <Grid x:Name="LogsPage" Visibility="Collapsed" Padding="{StaticResource PagePaddingDefault}">
+                    <Grid MaxWidth="{StaticResource ContentMaxWidth}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock x:Name="LogsPageTitle" Text="Journaux" Style="{StaticResource GolaboxPageTitleTextStyle}" AutomationProperties.HeadingLevel="Level1" />
+                        <!-- One activation control (its On/Off content carries the state) + view options, never pushed into an overflow menu -->
+                        <Grid Grid.Row="1" Margin="{StaticResource SectionMargin}" ColumnSpacing="{StaticResource ControlGap}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                            <ToggleSwitch x:Name="LoggingToggle" VerticalAlignment="Center" IsOn="{x:Bind ViewModel.LoggingEnabled, Mode=TwoWay}" />
+                            <StackPanel x:Name="LogViewOptions" Grid.Column="1" Orientation="Horizontal" Spacing="{StaticResource ButtonGroupGap}" VerticalAlignment="Center">
+                                <ComboBox x:Name="LogFilterCombo" Width="{StaticResource ControlWidthSelect}" VerticalAlignment="Center"
+                                          SelectedIndex="{x:Bind ViewModel.LogFilterIndex, Mode=TwoWay}" />
+                                <!-- IconButton: ToolTip + AutomationProperties.Name set in code-behind -->
+                                <ToggleButton x:Name="LogWrapToggle" Style="{StaticResource GolaboxIconToggleButtonStyle}" IsChecked="True" VerticalAlignment="Center" Click="LogWrapToggle_Click">
+                                    <FontIcon Glyph="&#xE751;" FontSize="{StaticResource IconInline}" />
+                                </ToggleButton>
+                            </StackPanel>
+                        </Grid>
+                        <!-- CommandBar anchored on top of the log surface, in the same container -->
+                        <Grid Grid.Row="2" Margin="{StaticResource SectionMargin}" RowSpacing="{StaticResource SpaceXXS}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <CommandBar x:Name="LogsCommandBar" HorizontalAlignment="Left" DefaultLabelPosition="Right" IsOpen="False">
+                                <AppBarButton x:Name="RefreshLogsButton" Label="Actualiser" Command="{x:Bind ViewModel.RefreshLogsCommand}">
+                                    <AppBarButton.Icon><FontIcon Glyph="&#xE72C;" /></AppBarButton.Icon>
+                                </AppBarButton>
+                                <AppBarButton x:Name="CopyLogsButton" Label="Copier" Command="{x:Bind ViewModel.CopyLogsCommand}">
+                                    <AppBarButton.Icon><FontIcon Glyph="&#xE8C8;" /></AppBarButton.Icon>
+                                </AppBarButton>
+                                <AppBarButton x:Name="ClearLogsButton" Label="Effacer" Click="ClearLogs_Click">
+                                    <AppBarButton.Icon><FontIcon Glyph="&#xE74D;" /></AppBarButton.Icon>
+                                </AppBarButton>
+                                <AppBarButton x:Name="OpenLogsButton" Label="Ouvrir le dossier" Command="{x:Bind ViewModel.OpenLogFolderCommand}">
+                                    <AppBarButton.Icon><FontIcon Glyph="&#xE838;" /></AppBarButton.Icon>
+                                </AppBarButton>
+                            </CommandBar>
+                            <TextBox x:Name="LogViewer" Grid.Row="1" Style="{StaticResource GolaboxMonoSurfaceStyle}" Text="{x:Bind ViewModel.LogDisplayText, Mode=OneWay}"
+                                     AutomationProperties.LabeledBy="{Binding ElementName=LogsPageTitle}" />
+                        </Grid>
+                        <InfoBar x:Name="LogsCopiedBar" Grid.Row="3" Severity="Success" IsOpen="False" IsClosable="True" />
+                    </Grid>
+                </Grid>
+
+                <!-- ============================== À propos (AboutPanel) ============================== -->
+                <ScrollViewer x:Name="AboutPage" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled" HorizontalScrollMode="Disabled" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Enabled">
+                    <Border x:Name="AboutPageHost" Padding="{StaticResource PagePaddingDefault}">
+                        <StackPanel MaxWidth="{StaticResource ContentMaxWidth}">
+                            <TextBlock x:Name="AboutPageTitle" Text="À propos" Style="{StaticResource GolaboxPageTitleTextStyle}" AutomationProperties.HeadingLevel="Level1" />
+
+                            <!-- Identity -->
+                            <StackPanel Style="{StaticResource GolaboxSectionStyle}">
+                                <Border Style="{StaticResource GolaboxRowCardStyle}" Padding="16">
+                                    <Grid ColumnSpacing="{StaticResource IconTextGap}">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <FontIcon Glyph="&#xE995;" FontSize="{StaticResource IconAbout}" VerticalAlignment="Top" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                  AutomationProperties.AccessibilityView="Raw" />
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="Sound Keeper GUI" Style="{StaticResource GolaboxSubtitleTextStyle}" />
+                                            <TextBlock Text="{x:Bind ViewModel.AboutVersionText}" Style="{StaticResource GolaboxCaptionTextStyle}" IsTextSelectionEnabled="True" Margin="0,4,0,0" />
+                                            <TextBlock x:Name="AboutGuiDescription" Style="{StaticResource GolaboxBodyTextStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,8,0,0" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Moteur tiers et licence -->
+                            <StackPanel Style="{StaticResource GolaboxSectionStyle}">
+                                <TextBlock x:Name="AboutEngineTitle" Text="Moteur Sound Keeper" Style="{StaticResource GolaboxSectionHeaderTextStyle}" Margin="{StaticResource SectionHeaderMargin}" AutomationProperties.HeadingLevel="Level2" />
+                                <StackPanel Style="{StaticResource GolaboxRowStackStyle}">
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="{x:Bind ViewModel.EngineVersionText, Mode=OneWay}" Style="{StaticResource GolaboxBodyTextStyle}" />
+                                                <TextBlock x:Name="AboutEngineDescription" Style="{StaticResource GolaboxCaptionTextStyle}" Margin="0,4,0,0" />
+                                            </StackPanel>
+                                            <HyperlinkButton x:Name="OpenUpstreamLink" Grid.Column="1" VerticalAlignment="Center" Click="OpenUpstream_Click">
+                                                <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceXS}">
+                                                    <TextBlock x:Name="OpenUpstreamText" Text="Projet d’origine" />
+                                                    <FontIcon Glyph="&#xE8A7;" FontSize="{StaticResource IconStatus}" />
+                                                </StackPanel>
+                                            </HyperlinkButton>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Liens du projet GUI -->
+                            <StackPanel Style="{StaticResource GolaboxSectionStyle}">
+                                <TextBlock x:Name="AboutGuiTitle" Text="Projet GUI" Style="{StaticResource GolaboxSectionHeaderTextStyle}" Margin="{StaticResource SectionHeaderMargin}" AutomationProperties.HeadingLevel="Level2" />
+                                <StackPanel Style="{StaticResource GolaboxRowStackStyle}">
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <TextBlock x:Name="SourceCodeLabel" Text="Code source de l’interface" Style="{StaticResource GolaboxBodyTextStyle}" VerticalAlignment="Center" />
+                                            <HyperlinkButton x:Name="OpenGuiProjectLink" Grid.Column="1" VerticalAlignment="Center" Click="OpenGuiProject_Click">
+                                                <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceXS}">
+                                                    <TextBlock x:Name="OpenGuiProjectText" Text="GitHub" />
+                                                    <FontIcon Glyph="&#xE8A7;" FontSize="{StaticResource IconStatus}" />
+                                                </StackPanel>
+                                            </HyperlinkButton>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <TextBlock x:Name="DocumentationLabel" Text="Documentation" Style="{StaticResource GolaboxBodyTextStyle}" VerticalAlignment="Center" />
+                                            <HyperlinkButton x:Name="OpenDocumentationLink" Grid.Column="1" VerticalAlignment="Center" Click="OpenDocumentation_Click">
+                                                <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceXS}">
+                                                    <TextBlock x:Name="OpenDocumentationText" Text="Ouvrir" />
+                                                    <FontIcon Glyph="&#xE8A7;" FontSize="{StaticResource IconStatus}" />
+                                                </StackPanel>
+                                            </HyperlinkButton>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Diagnostic: single entry point, DiagnosticPanel -->
+                            <StackPanel Style="{StaticResource GolaboxSectionStyle}">
+                                <TextBlock x:Name="DiagnosticTitle" Text="Diagnostic" Style="{StaticResource GolaboxSectionHeaderTextStyle}" Margin="{StaticResource SectionHeaderMargin}" AutomationProperties.HeadingLevel="Level2" />
+                                <StackPanel Style="{StaticResource GolaboxRowStackStyle}">
+                                    <Border Style="{StaticResource GolaboxRowCardStyle}">
+                                        <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <TextBox x:Name="DiagnosticBox" Style="{StaticResource GolaboxMonoSurfaceStyle}"
+                                                     Text="{x:Bind ViewModel.DiagnosticText, Mode=OneWay}" AutomationProperties.LabeledBy="{Binding ElementName=DiagnosticTitle}" />
+                                            <Button x:Name="CopyDiagnosticButton" Grid.Column="1" Style="{StaticResource GolaboxActionButtonStyle}" VerticalAlignment="Top" Command="{x:Bind ViewModel.CopyDiagnosticCommand}">
+                                                <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceXS}">
+                                                    <FontIcon Glyph="&#xE8C8;" FontSize="{StaticResource IconInline}" />
+                                                    <TextBlock x:Name="CopyDiagnosticText" Text="Copier les informations système" />
+                                                </StackPanel>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                    <InfoBar x:Name="AboutCopiedBar" Severity="Success" IsOpen="False" IsClosable="True" />
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </ScrollViewer>
+            </Grid>
+        </NavigationView>
+
+        <InfoBar x:Name="ErrorBar" Margin="24" VerticalAlignment="Bottom" Severity="Error" IsOpen="False" IsClosable="True" Title="Une erreur est survenue" />
+    </Grid>
+</Window>

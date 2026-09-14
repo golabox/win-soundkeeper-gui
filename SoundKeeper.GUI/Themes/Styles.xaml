@@ -1,0 +1,109 @@
+<!-- Golabox Utility System v1.0 — light styles on native controls (no ControlTemplate).
+     Colors come only from Windows ThemeResources (handoff I.2): Light, Dark and High Contrast are free. -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <FontFamily x:Key="MonoFontFamily">Cascadia Mono, Consolas</FontFamily>
+
+    <!-- Typography: WinUI ramp -->
+    <Style x:Key="GolaboxPageTitleTextStyle" TargetType="TextBlock" BasedOn="{StaticResource TitleTextBlockStyle}">
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="GolaboxSectionHeaderTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="GolaboxBodyTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="GolaboxCaptionTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <!-- SettingsSection: header + rows stacked at RowGap, no card -->
+    <Style x:Key="GolaboxSectionStyle" TargetType="StackPanel">
+        <Setter Property="Margin" Value="{StaticResource SectionMargin}" />
+    </Style>
+    <Style x:Key="GolaboxRowStackStyle" TargetType="StackPanel">
+        <Setter Property="Spacing" Value="{StaticResource RowGap}" />
+    </Style>
+
+    <!-- SettingRow card: the only card level -->
+    <Style x:Key="GolaboxRowCardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+        <Setter Property="Padding" Value="{StaticResource RowPadding}" />
+        <Setter Property="MinHeight" Value="{StaticResource RowMinHeight}" />
+    </Style>
+    <!-- SettingRow inner grid: text block | control; Compact moves the control to row 1 -->
+    <Style x:Key="GolaboxRowGridStyle" TargetType="Grid">
+        <Setter Property="ColumnSpacing" Value="{StaticResource ControlGap}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="GolaboxDividerStyle" TargetType="Border">
+        <Setter Property="Height" Value="{StaticResource BorderThin}" />
+        <Setter Property="Background" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+    </Style>
+
+    <!-- IconButton: 32 x 32, glyph 16. ToolTip + AutomationProperties.Name are mandatory at call site. -->
+    <Style x:Key="GolaboxIconButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="Width" Value="{StaticResource IconButtonSize}" />
+        <Setter Property="Height" Value="{StaticResource IconButtonSize}" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style x:Key="GolaboxSubtleIconButtonStyle" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
+        <Setter Property="Width" Value="{StaticResource IconButtonSize}" />
+        <Setter Property="Height" Value="{StaticResource IconButtonSize}" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style x:Key="GolaboxIconToggleButtonStyle" TargetType="ToggleButton" BasedOn="{StaticResource DefaultToggleButtonStyle}">
+        <Setter Property="Width" Value="{StaticResource IconButtonSize}" />
+        <Setter Property="Height" Value="{StaticResource IconButtonSize}" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+    <!-- SettingRow.Action button -->
+    <Style x:Key="GolaboxActionButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="MinWidth" Value="{StaticResource ButtonMinWidth}" />
+        <Setter Property="MinHeight" Value="{StaticResource ControlHeight}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- Selected state (flyout): accent bar 3 x 16, radius 2 -->
+    <Style x:Key="GolaboxAccentBarStyle" TargetType="Border">
+        <Setter Property="Width" Value="3" />
+        <Setter Property="Height" Value="{StaticResource IconInline}" />
+        <Setter Property="CornerRadius" Value="2" />
+        <Setter Property="Background" Value="{ThemeResource AccentFillColorDefaultBrush}" />
+    </Style>
+
+    <!-- Additions for Shell B (Sound Keeper): same tokens, no new visual language. -->
+    <!-- SettingRow.Action primary (engine on/off) -->
+    <Style x:Key="GolaboxAccentActionButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+        <Setter Property="MinWidth" Value="{StaticResource ButtonMinWidth}" />
+        <Setter Property="MinHeight" Value="{StaticResource ControlHeight}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <!-- AboutPanel: application name (TypeSubtitle 20 / 28 SB) -->
+    <Style x:Key="GolaboxSubtitleTextStyle" TargetType="TextBlock" BasedOn="{StaticResource SubtitleTextBlockStyle}">
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <!-- Path under a row title: Caption + monospace -->
+    <Style x:Key="GolaboxMonoCaptionTextStyle" TargetType="TextBlock" BasedOn="{StaticResource GolaboxCaptionTextStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
+        <Setter Property="IsTextSelectionEnabled" Value="True" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <!-- DiagnosticPanel / LogViewer surface: read-only, selectable, monospace -->
+    <Style x:Key="GolaboxMonoSurfaceStyle" TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource MonoFontSize}" />
+        <Setter Property="IsReadOnly" Value="True" />
+        <Setter Property="AcceptsReturn" Value="True" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="IsSpellCheckEnabled" Value="False" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+    </Style>
+</ResourceDictionary>
