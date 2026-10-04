@@ -1,6 +1,23 @@
 **~**
-/.vs/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.aps
+
+# Upstream C++ engine outputs
 /Bin/
 /Build/
-*.aps
-*.vcxproj.user
+
+# .NET / WinUI outputs (publish\win-x64 is the local user build, recreated by build-release.ps1)
+[Bb]in/
+[Oo]bj/
+publish/
+*.binlog
+TestResults/
+
+# Local machine artifacts
+*.lnk
+*.log
+*.tmp

@@ -80,6 +80,10 @@ public sealed class AppLogger
             var line = $"{DateTimeOffset.Now:O} [{level}] {message}{Environment.NewLine}";
             await File.AppendAllTextAsync(_logPath, line, Encoding.UTF8).ConfigureAwait(false);
         }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // Best effort: a log held by another process must never break startup, engine control or exit.
+        }
         finally
         {
             _gate.Release();

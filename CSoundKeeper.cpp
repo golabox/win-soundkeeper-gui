@@ -295,7 +295,7 @@ bool IsUserSessionLocked()
 //
 
 CSoundKeeper::CSoundKeeper() { }
-CSoundKeeper::~CSoundKeeper() { }
+CSoundKeeper::~CSoundKeeper() { delete[] m_cfg_device_ids; }
 
 // IUnknown methods
 
@@ -476,6 +476,27 @@ bool IsDeviceMarked(IMMDevice* device)
 	return result;
 }
 
+bool CSoundKeeper::IsDeviceSelected(IMMDevice* device)
+{
+	LPWSTR device_id = nullptr;
+	if (HRESULT hr = device->GetId(&device_id); FAILED(hr))
+	{
+		DebugLogWarning("Unable to get device ID: 0x%08X.", hr);
+		return false;
+	}
+	defer [&] { CoTaskMemFree(device_id); };
+
+	for (LPCWSTR id = m_cfg_device_ids; id && *id; id += wcslen(id) + 1)
+	{
+		if (StringEquals<AsciiToLower>(id, device_id))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 HRESULT CSoundKeeper::Start()
 {
 	ScopedLock lock(m_mutex);
@@ -579,6 +600,11 @@ HRESULT CSoundKeeper::Start()
 			else if (m_cfg_device_type == KeepDeviceType::Marked && !IsDeviceMarked(device))
 			{
 				DebugLog("Skipping this device because it is not marked with '!'.");
+				continue;
+			}
+			else if (m_cfg_device_type == KeepDeviceType::Selected && !this->IsDeviceSelected(device))
+			{
+				DebugLog("Skipping this device because it is not selected.");
 				continue;
 			}
 
@@ -948,16 +974,37 @@ void CSoundKeeper::ParseStreamArgs(KeepStreamType stream_type, const char* args)
 	}
 }
 
+// Collects "device=<id>" arguments, IDs as returned by IMMDevice::GetId, into null-terminated strings ended by an
+// empty string. An empty list keeps no device.
+void CSoundKeeper::ParseDeviceIds(const char* args)
+{
+	delete[] m_cfg_device_ids;
+	m_cfg_device_ids = new wchar_t[strlen(args) + 1]();
+
+	wchar_t* out = m_cfg_device_ids;
+	for (const char* p = strstr(args, "device="); p; p = strstr(p, "device="))
+	{
+		p += 7;
+		const wchar_t* id = out;
+		while (*p && *p != ' ' && *p != '\t') { *out++ = (wchar_t)(unsigned char)*p++; }
+		if (out != id) { *out++ = L'\0'; }
+	}
+}
+
 void CSoundKeeper::ParseModeString(const char* args)
 {
-	char buf[MAX_PATH];
-	strcpy_s(buf, args);
+	// Sized from the input: a few device IDs already exceed MAX_PATH.
+	size_t buf_size = strlen(args) + 1;
+	char* buf = new char[buf_size];
+	defer [&] { delete[] buf; };
+	strcpy_s(buf, buf_size, args);
 	_strlwr(buf);
 
 	if (strstr(buf, "all"))     { this->SetDeviceType(KeepDeviceType::All); }
 	if (strstr(buf, "marked"))  { this->SetDeviceType(KeepDeviceType::Marked); }
 	if (strstr(buf, "analog"))  { this->SetDeviceType(KeepDeviceType::Analog); }
 	if (strstr(buf, "digital")) { this->SetDeviceType(KeepDeviceType::Digital); }
+	if (strstr(buf, "selected") || strstr(buf, "device=")) { this->SetDeviceType(KeepDeviceType::Selected); this->ParseDeviceIds(buf); }
 	if (strstr(buf, "kill"))    { this->SetDeviceType(KeepDeviceType::None); }
 	if (strstr(buf, "remote"))  { this->SetAllowRemote(true); }
 
@@ -1096,6 +1143,7 @@ HRESULT CSoundKeeper::Main()
 		case KeepDeviceType::All:       DebugLog("Device Type: All."); break;
 		case KeepDeviceType::Analog:    DebugLog("Device Type: Analog."); break;
 		case KeepDeviceType::Digital:   DebugLog("Device Type: Digital."); break;
+		case KeepDeviceType::Selected:  DebugLog("Device Type: Selected."); break;
 		default:                        DebugLogError("Unknown Device Type."); break;
 	}
 

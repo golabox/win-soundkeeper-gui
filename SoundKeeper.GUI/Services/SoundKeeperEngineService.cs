@@ -9,9 +9,6 @@ public sealed class SoundKeeperEngineService
     private readonly AppLogger _logger;
     private Process? _process;
 
-    public int? ProcessId => GetSnapshot().ProcessId;
-    public DateTimeOffset? StartedAt => GetSnapshot().StartedAt;
-
     public SoundKeeperEngineService(EngineExecutableResolver resolver, AppLogger logger)
     {
         _resolver = resolver;
@@ -128,32 +125,9 @@ public sealed class SoundKeeperEngineService
         }
     }
 
-    public async Task RestartAsync(AppSettings settings)
-    {
-        await StartAsync(settings).ConfigureAwait(false);
-    }
-
-    public bool IsRunning()
-    {
-        if (_process is { HasExited: false })
-        {
-            return true;
-        }
-
-        var processName = Path.GetFileNameWithoutExtension(_resolver.ExpectedFileName);
-        var processes = Process.GetProcessesByName(processName);
-        try
-        {
-            return processes.Length > 0;
-        }
-        finally
-        {
-            foreach (var process in processes)
-            {
-                process.Dispose();
-            }
-        }
-    }
+    // No explicit stop: the new engine instance stops the previous one itself (SoundKeeperStopEvent /
+    // SoundKeeperMutex), so two engines never run together.
+    public Task RestartAsync(AppSettings settings) => StartAsync(settings);
 
     public EngineSnapshot GetSnapshot()
     {

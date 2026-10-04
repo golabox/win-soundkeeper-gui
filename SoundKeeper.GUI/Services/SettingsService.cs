@@ -59,8 +59,8 @@ public sealed class SettingsService
         try
         {
             await using var stream = File.OpenRead(SettingsPath);
-            return await JsonSerializer.DeserializeAsync<AppSettings>(stream, JsonOptions).ConfigureAwait(false)
-                ?? new AppSettings();
+            return WithValidValues(await JsonSerializer.DeserializeAsync<AppSettings>(stream, JsonOptions).ConfigureAwait(false)
+                ?? new AppSettings());
         }
         catch (Exception exception) when (exception is JsonException or IOException or UnauthorizedAccessException)
         {
@@ -68,6 +68,21 @@ public sealed class SettingsService
                 .ConfigureAwait(false);
             return new AppSettings();
         }
+    }
+
+    // A number edited by hand outside an enum (for example "SleepBehavior": 9) falls back to that setting's default;
+    // a missing or damaged output selection (older settings, hand edit) loads as an empty selection.
+    private static AppSettings WithValidValues(AppSettings settings)
+    {
+        var defaults = new AppSettings();
+        if (!Enum.IsDefined(settings.DeviceMode)) settings.DeviceMode = defaults.DeviceMode;
+        if (!Enum.IsDefined(settings.SignalMode)) settings.SignalMode = defaults.SignalMode;
+        if (!Enum.IsDefined(settings.SleepBehavior)) settings.SleepBehavior = defaults.SleepBehavior;
+        if (!Enum.IsDefined(settings.Theme)) settings.Theme = defaults.Theme;
+        settings.SelectedDevices ??= [];
+        settings.SelectedDevices.RemoveAll(device => device is null || string.IsNullOrWhiteSpace(device.Id));
+        foreach (var device in settings.SelectedDevices) device.Name ??= string.Empty;
+        return settings;
     }
 
     public async Task SaveAsync(AppSettings settings)

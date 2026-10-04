@@ -1,6 +1,6 @@
 # Sound Keeper GUI
 
-Sound Keeper GUI apporte une interface Windows 11 moderne au moteur audio open source [Sound Keeper](https://github.com/vrubleg/soundkeeper) d’Evgeny Vrublevsky. Le moteur C++/WASAPI reste intact et responsable de l’audio ; le GUI C# ne fait que construire sa ligne de commande, le démarrer et l’arrêter proprement.
+Sound Keeper GUI apporte une interface Windows 11 moderne au moteur audio open source [Sound Keeper](https://github.com/vrubleg/soundkeeper) d’Evgeny Vrublevsky. Le moteur C++/WASAPI reste responsable de l’audio, avec une seule extension : cibler des sorties précises (`selected`, `device=<id>`). Le GUI C# construit sa ligne de commande, le démarre et l’arrête proprement.
 
 Cette version est un fork indépendant. Elle n’est ni publiée ni supportée officiellement par l’auteur original.
 
@@ -8,7 +8,7 @@ Cette version est un fork indépendant. Elle n’est ni publiée ni supportée o
 
 - état actif/arrêté avec PID, durée d’exécution, fréquence et commande Activer/Désactiver ;
 - navigation latérale Windows 11 repliable avec pages Général, Avancé, Journaux et À propos ;
-- périphérique principal, toutes les sorties, numériques, analogiques ou marquées par `!` ;
+- sortie Windows par défaut, toutes les sorties ou sélection personnalisée des sorties Windows par leur nom (une sortie débranchée reste mémorisée) ; les modes numériques, analogiques et marqués restent proposés aux configurations qui les utilisent ;
 - modes Fluctuate, Zero, OpenOnly, Sine, White, Brown et Pink ;
 - réglages contextuels de fréquence, amplitude, durée, pause et fondu ;
 - comportements SleepL, SleepD, Sleepy et NoSleep présentés en langage courant ;
@@ -28,24 +28,28 @@ Cette version est un fork indépendant. Elle n’est ni publiée ni supportée o
 
 ## Compiler et lancer
 
-1. Ouvrir `SoundKeeper.GUI.slnx` dans Visual Studio.
-2. Choisir `Release` et `x64` dans la barre d’outils.
-3. Lancer **Générer > Générer la solution**. Le projet C++ crée `Bin\SoundKeeper64.exe`; le projet GUI le copie ensuite dans son dossier `Engine`.
-4. Définir `SoundKeeper.GUI` comme projet de démarrage.
-5. Appuyer sur `F5` (débogage) ou `Ctrl+F5` (sans débogage).
-
-En ligne de commande, depuis un terminal développeur Visual Studio :
+**Build Release officiel**, depuis la racine du dépôt (quitter d’abord l’application : zone de notification > Quitter) :
 
 ```powershell
-msbuild SoundKeeper.GUI.slnx /restore /m /p:Configuration=Release /p:Platform=x64
+.\build-release.ps1
+```
+
+Le script s’arrête à la première erreur et enchaîne :
+
+1. le moteur C++ avec MSBuild (Visual Studio ou Build Tools 2026, charge C++ Desktop) → `Bin\SoundKeeper64.exe`, sans le pré-build upstream `BuildInfo.cmd` qui réécrirait la version du moteur ;
+2. le GUI, les tests et la publication `win-x64` avec le SDK .NET ;
+3. la vérification de la publication (`Engine`, `Strings`, PRI, XBF) ;
+4. la création ou la mise à jour du raccourci local `Lancer Sound Keeper GUI.lnk`.
+
+La sortie utilisateur est `SoundKeeper.GUI\publish\win-x64`. `bin`, `obj`, `publish` et le raccourci sont des artefacts locaux non versionnés.
+
+Le moteur doit précéder le GUI, qui copie `Bin\SoundKeeper64.exe` dans `Engine` : la solution ne déclare pas cet ordre et `dotnet build SoundKeeper.GUI.slnx` ne compile pas le projet C++. Le script fait foi. Pour itérer sur le GUI une fois le moteur compilé :
+
+```powershell
 dotnet run --project SoundKeeper.GUI.Tests/SoundKeeper.GUI.Tests.csproj -c Release -p:Platform=x64
 ```
 
-Pour une publication locale autonome .NET :
-
-```powershell
-dotnet publish SoundKeeper.GUI/SoundKeeper.GUI.csproj -c Release -r win-x64 --self-contained true -p:Platform=x64
-```
+Le démarrage avec Windows vise la publication, repérée par le fichier `SoundKeeper.GUI.published` : une build lancée depuis Visual Studio ou `bin` ne remplace jamais une entrée valide.
 
 ## Données utilisateur
 
@@ -61,9 +65,10 @@ La variable d’environnement `SOUNDKEEPER_ENGINE_PATH` peut temporairement poin
 
 ## Organisation
 
-- `Sound Keeper Core` : sources C++ upstream à la racine, inchangées ;
+- `Sound Keeper Core` : sources C++ upstream à la racine, étendues uniquement pour la sélection de sorties par identifiant ;
 - `SoundKeeper.GUI/` : application WinUI 3 non packagée ;
 - `SoundKeeper.GUI.Tests/` : tests ciblés exécutables sans framework externe ;
+- `build-release.ps1` : build Release officiel ;
 - `docs/ARCHITECTURE.md` : composants et décisions ;
 - `docs/UPSTREAM_SYNC.md` : procédure de synchronisation upstream.
 

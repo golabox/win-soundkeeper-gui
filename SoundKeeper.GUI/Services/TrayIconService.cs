@@ -1,5 +1,4 @@
 using System.Drawing;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace SoundKeeper.GUI.Services;
@@ -20,30 +19,32 @@ public sealed class TrayIconService : IDisposable
     private readonly ToolStripMenuItem _startupItem;
     private readonly Func<bool> _isRunning;
     private readonly Func<bool> _startsWithWindows;
+    private readonly Func<string, string, string> _text;
     private readonly Action<TrayAction> _action;
 
+    // text(key, fallback) reads the same .resw strings as the window.
     public TrayIconService(
-        IntPtr windowHandle,
         Func<bool> isRunning,
         Func<bool> startsWithWindows,
+        Func<string, string, string> text,
         Action<TrayAction> action)
     {
-        _ = windowHandle;
         _isRunning = isRunning;
         _startsWithWindows = startsWithWindows;
+        _text = text;
         _action = action;
 
         _statusItem = new ToolStripMenuItem { Enabled = false };
         _toggleItem = new ToolStripMenuItem();
         _toggleItem.Click += (_, _) => _action(TrayAction.Toggle);
 
-        var openItem = new ToolStripMenuItem(Text("Ouvrir", "Open", "Abrir"));
+        var openItem = new ToolStripMenuItem(_text("TrayOpen", "Ouvrir"));
         openItem.Click += (_, _) => _action(TrayAction.Open);
 
-        _startupItem = new ToolStripMenuItem(Text("Lancer avec Windows", "Start with Windows", "Iniciar con Windows"));
+        _startupItem = new ToolStripMenuItem(_text("StartupToggle.Header", "Lancer au démarrage de Windows"));
         _startupItem.Click += (_, _) => _action(TrayAction.ToggleStartup);
 
-        var exitItem = new ToolStripMenuItem(Text("Quitter", "Exit", "Salir"));
+        var exitItem = new ToolStripMenuItem(_text("TrayExit", "Quitter"));
         exitItem.Click += (_, _) => _action(TrayAction.Exit);
 
         var menu = new ContextMenuStrip();
@@ -58,13 +59,15 @@ public sealed class TrayIconService : IDisposable
         ]);
         menu.Opening += (_, _) => RefreshMenu();
 
-        var icon = Environment.ProcessPath is { } path
-            ? Icon.ExtractAssociatedIcon(path)
+        // The tray .ico holds hand-drawn 16/20/24/32 frames: take the one matching the system small icon size (DPI).
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "soundkeeper-tray.ico");
+        var icon = File.Exists(iconPath)
+            ? new Icon(iconPath, SystemInformation.SmallIconSize)
             : SystemIcons.Application;
         _notifyIcon = new NotifyIcon
         {
             ContextMenuStrip = menu,
-            Icon = icon ?? SystemIcons.Application,
+            Icon = icon,
             Visible = true
         };
         _notifyIcon.MouseClick += (_, args) =>
@@ -77,15 +80,14 @@ public sealed class TrayIconService : IDisposable
     public void UpdateToolTip()
     {
         var running = _isRunning();
-        _notifyIcon.Text = running
-            ? Text("Sound Keeper GUI — Moteur actif", "Sound Keeper GUI — Engine active", "Sound Keeper GUI — Motor activo")
-            : Text("Sound Keeper GUI — Moteur arrêté", "Sound Keeper GUI — Engine stopped", "Sound Keeper GUI — Motor detenido");
-        _statusItem.Text = running
-            ? Text("Sound Keeper : actif", "Sound Keeper: active", "Sound Keeper: activo")
-            : Text("Sound Keeper : arrêté", "Sound Keeper: stopped", "Sound Keeper: detenido");
+        var status = running
+            ? _text("StatusRunning", "Sound Keeper actif")
+            : _text("StatusStopped", "Sound Keeper arrêté");
+        _notifyIcon.Text = status;
+        _statusItem.Text = status;
         _toggleItem.Text = running
-            ? Text("Désactiver", "Disable", "Desactivar")
-            : Text("Activer", "Enable", "Activar");
+            ? _text("DisableButton", "Désactiver")
+            : _text("EnableButton", "Activer");
     }
 
     public void ShowNotification(string message)
@@ -102,12 +104,6 @@ public sealed class TrayIconService : IDisposable
         _startupItem.Checked = _startsWithWindows();
     }
 
-    public static void RestoreWindow(IntPtr handle)
-    {
-        ShowWindow(handle, 9);
-        SetForegroundWindow(handle);
-    }
-
     public void Dispose()
     {
         _notifyIcon.Visible = false;
@@ -118,20 +114,4 @@ public sealed class TrayIconService : IDisposable
         }
         _notifyIcon.Dispose();
     }
-
-    private static string Text(string french, string english, string spanish)
-    {
-        var language = LocalizationService.ActiveLanguage;
-        if (language.StartsWith("fr", StringComparison.OrdinalIgnoreCase)) return french;
-        if (language.StartsWith("es", StringComparison.OrdinalIgnoreCase)) return spanish;
-        return english;
-    }
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool ShowWindow(IntPtr window, int command);
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool SetForegroundWindow(IntPtr window);
 }

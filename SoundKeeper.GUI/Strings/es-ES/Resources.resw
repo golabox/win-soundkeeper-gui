@@ -4,10 +4,15 @@
   <resheader name="version"><value>2.0</value></resheader>
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
-  <data name="DevicePrimaryLabel" xml:space="preserve"><value>Dispositivo de audio principal</value></data>
-  <data name="DevicePrimaryDescription" xml:space="preserve"><value>Sigue la salida de audio principal de Windows.</value></data>
-  <data name="DeviceAllLabel" xml:space="preserve"><value>Todos los dispositivos de audio</value></data>
-  <data name="DeviceAllDescription" xml:space="preserve"><value>Mantiene activas todas las salidas de audio habilitadas.</value></data>
+  <data name="DevicePrimaryLabel" xml:space="preserve"><value>Salida predeterminada de Windows</value></data>
+  <data name="DevicePrimaryDescription" xml:space="preserve"><value>Sigue la salida de audio predeterminada de Windows, aunque cambie.</value></data>
+  <data name="DeviceAllLabel" xml:space="preserve"><value>Todas las salidas</value></data>
+  <data name="DeviceAllDescription" xml:space="preserve"><value>Mantiene activas todas las salidas de audio disponibles.</value></data>
+  <data name="DeviceSelectedLabel" xml:space="preserve"><value>Selección personalizada</value></data>
+  <data name="DeviceSelectedDescription" xml:space="preserve"><value>Mantiene activas solo las salidas marcadas a continuación.</value></data>
+  <data name="DeviceSelectedNoneDescription" xml:space="preserve"><value>Ninguna salida marcada: Sound Keeper no mantiene ninguna salida activa.</value></data>
+  <data name="DeviceUnavailable" xml:space="preserve"><value>No disponible</value></data>
+  <data name="DeviceUnnamed" xml:space="preserve"><value>Salida de audio</value></data>
   <data name="DeviceDigitalLabel" xml:space="preserve"><value>Salidas digitales</value></data>
   <data name="DeviceDigitalDescription" xml:space="preserve"><value>Salidas S/PDIF y HDMI.</value></data>
   <data name="DeviceAnalogLabel" xml:space="preserve"><value>Salidas analógicas</value></data>
@@ -25,13 +30,13 @@
   <data name="SignalWhiteLabel" xml:space="preserve"><value>Ruido blanco</value></data>
   <data name="SignalBrownLabel" xml:space="preserve"><value>Ruido marrón</value></data>
   <data name="SignalPinkLabel" xml:space="preserve"><value>Ruido rosa</value></data>
-  <data name="SleepStandardLabel" xml:space="preserve"><value>Comportamiento estándar</value></data>
-  <data name="SleepStandardDescription" xml:space="preserve"><value>Permite que el motor gestione automáticamente la suspensión de Windows.</value></data>
-  <data name="SleepLockedLabel" xml:space="preserve"><value>Suspender al bloquear</value></data>
-  <data name="SleepDisplayLabel" xml:space="preserve"><value>Suspender cuando se apague la pantalla</value></data>
-  <data name="SleepBothLabel" xml:space="preserve"><value>Suspender en ambos casos</value></data>
-  <data name="SleepNeverLabel" xml:space="preserve"><value>Ignorar la detección de suspensión</value></data>
-  <data name="SleepNeverDescription" xml:space="preserve"><value>Opción avanzada NoSleep del motor.</value></data>
+  <data name="SleepStandardLabel" xml:space="preserve"><value>Solo suspensión (predeterminado)</value></data>
+  <data name="SleepStandardDescription" xml:space="preserve"><value>La señal se detiene mientras el PC está en suspensión y se reanuda al despertar. En Windows 11 puede impedir la suspensión automática.</value></data>
+  <data name="SleepLockedLabel" xml:space="preserve"><value>Al bloquear la sesión</value></data>
+  <data name="SleepDisplayLabel" xml:space="preserve"><value>Al apagarse la pantalla</value></data>
+  <data name="SleepBothLabel" xml:space="preserve"><value>Bloqueo o pantalla apagada</value></data>
+  <data name="SleepNeverLabel" xml:space="preserve"><value>Nunca</value></data>
+  <data name="SleepNeverDescription" xml:space="preserve"><value>Sound Keeper nunca pausa la señal, ni siquiera durante la suspensión. Puede impedir la suspensión automática y consumir más batería.</value></data>
   <data name="ThemeSystemLabel" xml:space="preserve"><value>Sistema</value></data>
   <data name="ThemeLightLabel" xml:space="preserve"><value>Claro</value></data>
   <data name="ThemeDarkLabel" xml:space="preserve"><value>Oscuro</value></data>
@@ -43,7 +48,7 @@
   <data name="EngineUnavailable" xml:space="preserve"><value>no encontrado</value></data>
   <data name="EngineLabel" xml:space="preserve"><value>Motor</value></data>
   <data name="DevicesTitle.Text" xml:space="preserve"><value>Dispositivos</value></data>
-  <data name="DeviceModeCombo.Header" xml:space="preserve"><value>Salidas de audio</value></data>
+  <data name="DeviceModeCombo.Header" xml:space="preserve"><value>Salidas que mantener activas</value></data>
   <data name="OpenAudioText.Text" xml:space="preserve"><value>Configuración de sonido de Windows</value></data>
   <data name="SignalTitle.Text" xml:space="preserve"><value>Modo de funcionamiento</value></data>
   <data name="SignalModeCombo.Header" xml:space="preserve"><value>Señal</value></data>
@@ -55,7 +60,7 @@
   <data name="AudibleWarning.Title" xml:space="preserve"><value>Precaución</value></data>
   <data name="AudibleWarning.Message" xml:space="preserve"><value>Una frecuencia o amplitud elevada puede producir un sonido audible.</value></data>
   <data name="SleepTitle.Text" xml:space="preserve"><value>Suspensión y bloqueo</value></data>
-  <data name="SleepCombo.Header" xml:space="preserve"><value>Cuándo suspender el motor</value></data>
+  <data name="SleepCombo.Header" xml:space="preserve"><value>Pausa automática de la señal</value></data>
   <data name="WindowsTitle.Text" xml:space="preserve"><value>Comportamiento de Windows</value></data>
   <data name="StartupToggle.Header" xml:space="preserve"><value>Iniciar con Windows</value></data>
   <data name="StartMinimizedToggle.Header" xml:space="preserve"><value>Iniciar minimizado</value></data>
@@ -100,7 +105,7 @@
   <data name="AboutEngineTitle.Text" xml:space="preserve"><value>Motor Sound Keeper</value></data>
   <data name="AboutEngineDescription.Text" xml:space="preserve"><value>Esta aplicación utiliza el motor Sound Keeper creado por Evgeny Vrublevsky y distribuido bajo la licencia MIT.</value></data>
   <data name="AboutGuiTitle.Text" xml:space="preserve"><value>Proyecto de la interfaz</value></data>
-  <data name="AboutGuiDescription.Text" xml:space="preserve"><value>Una interfaz independiente de Windows que controla Sound Keeper sin modificar su motor.</value></data>
+  <data name="AboutGuiDescription.Text" xml:space="preserve"><value>Una interfaz independiente de Windows que controla el motor Sound Keeper.</value></data>
   <data name="OpenDocumentationButton.Content" xml:space="preserve"><value>Documentación</value></data>
   <data name="AboutCopyDiagnosticButton.Content" xml:space="preserve"><value>Copiar información del sistema</value></data>
   <data name="LoggingActive" xml:space="preserve"><value>Registro activado</value></data>
@@ -109,15 +114,9 @@
   <data name="SignalWhiteDescription" xml:space="preserve"><value>Ruido uniforme y claramente audible que cubre todas las frecuencias.</value></data>
   <data name="SignalBrownDescription" xml:space="preserve"><value>Ruido audible más suave y grave, con más energía en bajas frecuencias.</value></data>
   <data name="SignalPinkDescription" xml:space="preserve"><value>Ruido audible equilibrado por octava, normalmente más natural que el ruido blanco.</value></data>
-  <data name="SleepLockedDescription" xml:space="preserve"><value>Detiene temporalmente la señal cuando la sesión de Windows está bloqueada.</value></data>
-  <data name="SleepDisplayDescription" xml:space="preserve"><value>Detiene temporalmente la señal cuando Windows apaga la pantalla.</value></data>
-  <data name="SleepBothDescription" xml:space="preserve"><value>Suspende la señal al bloquear la sesión o apagar la pantalla.</value></data>
-  <data name="ThemeSystemDescription" xml:space="preserve"><value>Sigue automáticamente el tema claro u oscuro elegido en Windows.</value></data>
-  <data name="ThemeLightDescription" xml:space="preserve"><value>Utiliza siempre la apariencia clara.</value></data>
-  <data name="ThemeDarkDescription" xml:space="preserve"><value>Utiliza siempre la apariencia oscura.</value></data>
-  <data name="LanguageFrenchDescription" xml:space="preserve"><value>Muestra la interfaz en francés después de reiniciar.</value></data>
-  <data name="LanguageEnglishDescription" xml:space="preserve"><value>Muestra la interfaz en inglés después de reiniciar.</value></data>
-  <data name="LanguageSpanishDescription" xml:space="preserve"><value>Muestra la interfaz en español después de reiniciar.</value></data>
+  <data name="SleepLockedDescription" xml:space="preserve"><value>La señal se detiene mientras la sesión de Windows está bloqueada (Win+L) y se reanuda al desbloquearla.</value></data>
+  <data name="SleepDisplayDescription" xml:space="preserve"><value>La señal se detiene cuando Windows apaga la pantalla y se reanuda cuando vuelve a encenderse. Ayuda a que el PC entre en suspensión automáticamente.</value></data>
+  <data name="SleepBothDescription" xml:space="preserve"><value>La señal se detiene cuando la sesión está bloqueada o la pantalla se apaga, y se reanuda cuando ya no es así.</value></data>
   <data name="FluctuateFrequencyDescription" xml:space="preserve"><value>{0:g} Hz ajusta el ritmo de la señal de mantenimiento ({0:g} microimpulsos por segundo), no la frecuencia de muestreo del dispositivo. El valor recomendado del motor suele ser suficiente y normalmente inaudible.</value></data>
   <data name="SineFrequencyDescription" xml:space="preserve"><value>{0:g} Hz es la frecuencia de la señal, no la de muestreo del dispositivo. Entre unos 20 y 20.000 Hz puede oírse según la amplitud; los valores recomendados del motor suelen ser suficientes.</value></data>
   <data name="TestSelectedSignalDescription" xml:space="preserve"><value>Reproduce la señal seleccionada durante 3 segundos a un nivel audible y después restaura la configuración.</value></data>
@@ -138,9 +137,10 @@
   <data name="ErrorBar.Title" xml:space="preserve"><value>Se produjo un error</value></data>
   <data name="RestartNowButton.Content" xml:space="preserve"><value>Reiniciar ahora</value></data>
   <data name="RestartApplicationButton.Content" xml:space="preserve"><value>Reiniciar la aplicación</value></data>
-  <data name="StartMinimizedDescription" xml:space="preserve"><value>Se aplica a los inicios manuales; al iniciar Windows, la aplicación siempre se inicia minimizada.</value></data>
+  <data name="StartMinimizedDescription" xml:space="preserve"><value>Al abrir la aplicación, la ventana permanece oculta en el área de notificación. Siempre ocurre así al iniciar Windows.</value></data>
+  <data name="MinimizeTrayDescription" xml:space="preserve"><value>Oculta la ventana en el área de notificación al minimizarla.</value></data>
   <data name="CloseTrayDescription" xml:space="preserve"><value>El botón Cerrar oculta la ventana en lugar de salir de la aplicación.</value></data>
-  <data name="AutoRestartDescription" xml:space="preserve"><value>Hasta 3 intentos por minuto; después, el reinicio automático se suspende.</value></data>
+  <data name="AutoRestartDescription" xml:space="preserve"><value>Hasta 3 intentos por minuto; después, Sound Keeper permanece detenido hasta que vuelvas a activarlo.</value></data>
   <data name="ToggleOn" xml:space="preserve"><value>Activado</value></data>
   <data name="ToggleOff" xml:space="preserve"><value>Desactivado</value></data>
   <data name="MaintenanceTitle" xml:space="preserve"><value>Mantenimiento</value></data>
@@ -152,7 +152,7 @@
   <data name="OpenAudioLink.Name" xml:space="preserve"><value>Abrir la configuración de sonido de Windows</value></data>
   <data name="TestSignalLabel" xml:space="preserve"><value>Probar la señal</value></data>
   <data name="RemoteDescription" xml:space="preserve"><value>Mantiene también activas las salidas de audio de las sesiones de Escritorio remoto.</value></data>
-  <data name="AdditionalArgumentsDescription" xml:space="preserve"><value>Se añaden al final del comando. Compruebe el resultado a continuación.</value></data>
+  <data name="AdditionalArgumentsDescription" xml:space="preserve"><value>Se añaden al final del comando. Comprueba el resultado a continuación.</value></data>
   <data name="CopyButton" xml:space="preserve"><value>Copiar</value></data>
   <data name="FilesTitle" xml:space="preserve"><value>Archivos</value></data>
   <data name="SettingsFileLabel" xml:space="preserve"><value>Archivo de configuración</value></data>
@@ -171,4 +171,6 @@
   <data name="ClearLogsConfirmButton" xml:space="preserve"><value>Borrar</value></data>
   <data name="AboutVersionFormat" xml:space="preserve"><value>Versión {0} ({1})</value></data>
   <data name="SourceCodeLabel" xml:space="preserve"><value>Código fuente de la interfaz</value></data>
+  <data name="TrayOpen" xml:space="preserve"><value>Abrir</value></data>
+  <data name="TrayExit" xml:space="preserve"><value>Salir</value></data>
 </root>

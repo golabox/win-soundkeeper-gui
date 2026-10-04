@@ -56,6 +56,13 @@ public sealed partial class MainWindow : Window
         _windowHandle = WindowNative.GetWindowHandle(this);
         var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(_windowHandle);
         _appWindow = AppWindow.GetFromWindowId(windowId);
+        // An unpackaged WinUI window has no icon of its own: the title bar would show the generic Windows one.
+        var appIcon = Path.Combine(AppContext.BaseDirectory, "Assets", "soundkeeper.ico");
+        _appWindow.SetTaskbarIcon(appIcon);
+        // Path-based APIs pass the large icon to the title bar too, which then shrinks it: load the small frame matching the window DPI.
+        var smallIconSize = GetSystemMetricsForDpi(SmallIconWidthMetric, GetDpiForWindow(_windowHandle));
+        _appWindow.SetTitleBarIcon(Microsoft.UI.Win32Interop.GetIconIdFromIcon(
+            LoadImage(IntPtr.Zero, appIcon, ImageIcon, smallIconSize, smallIconSize, LoadFromFile)));
         // Initial size in epx (Wide layout), clamped to the work area.
         var scale = GetDpiForWindow(_windowHandle) / 96d;
         var workArea = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Nearest).WorkArea;
@@ -92,7 +99,7 @@ public sealed partial class MainWindow : Window
         RestartNowButton.Content = L("RestartNowButton.Content", "Redémarrer maintenant");
         EngineSectionTitle.Text = L("EngineLabel", "Moteur");
         DevicesTitle.Text = L("DevicesTitle.Text", "Périphériques");
-        DeviceModeLabel.Text = L("DeviceModeCombo.Header", "Sorties audio");
+        DeviceModeLabel.Text = L("DeviceModeCombo.Header", "Sorties à maintenir actives");
         OpenAudioLabel.Text = L("OpenAudioText.Text", "Paramètres Son de Windows");
         OpenAudioLinkText.Text = L("OpenLinkText", "Ouvrir");
         AutomationProperties.SetName(OpenAudioLink, L("OpenAudioLink.Name", "Ouvrir les paramètres Son de Windows"));
@@ -107,20 +114,21 @@ public sealed partial class MainWindow : Window
         WaitLabel.Text = L("WaitBox.Header", "Pause entre signaux (s)");
         TestSignalLabel.Text = L("TestSignalLabel", "Tester le signal");
         SleepTitle.Text = L("SleepTitle.Text", "Veille et verrouillage");
-        SleepLabel.Text = L("SleepCombo.Header", "Quand suspendre le moteur");
+        SleepLabel.Text = L("SleepCombo.Header", "Pause automatique du signal");
         LanguageTitle.Text = L("LanguageTitle.Text", "Langue et apparence");
         LanguageLabel.Text = L("LanguageCombo.Header", "Langue de l’application");
         ThemeLabel.Text = L("ThemeCombo.Header", "Thème");
         WindowsTitle.Text = L("WindowsTitle.Text", "Comportement Windows");
         StartupLabel.Text = L("StartupToggle.Header", "Lancer au démarrage de Windows");
         StartMinimizedLabel.Text = L("StartMinimizedToggle.Header", "Démarrer minimisé");
-        StartMinimizedDescription.Text = L("StartMinimizedDescription", "S’applique aux lancements manuels : au démarrage de Windows, l’application démarre toujours minimisée.");
+        StartMinimizedDescription.Text = L("StartMinimizedDescription", "À l’ouverture, la fenêtre reste masquée dans la zone de notification. C’est toujours le cas au démarrage de Windows.");
         MinimizeTrayLabel.Text = L("MinimizeTrayToggle.Header", "Réduire dans la zone de notification");
+        MinimizeTrayDescription.Text = L("MinimizeTrayDescription", "Masque la fenêtre dans la zone de notification lorsque vous la réduisez.");
         CloseTrayLabel.Text = L("CloseTrayToggle.Header", "Fermer vers la zone de notification");
         CloseTrayDescription.Text = L("CloseTrayDescription", "La croix masque la fenêtre au lieu de quitter l’application.");
         MonitoringTitle.Text = L("MonitoringTitle.Text", "Surveillance");
         AutoRestartLabel.Text = L("AutoRestartToggle.Header", "Redémarrer automatiquement Sound Keeper en cas d’arrêt inattendu");
-        AutoRestartDescription.Text = L("AutoRestartDescription", "Au plus 3 tentatives par minute ; au-delà, la relance automatique est suspendue.");
+        AutoRestartDescription.Text = L("AutoRestartDescription", "Au plus 3 tentatives par minute ; au-delà, Sound Keeper reste arrêté jusqu’à ce que vous le réactiviez.");
         MaintenanceTitle.Text = L("MaintenanceTitle", "Maintenance");
         RestartApplicationLabel.Text = L("RestartApplicationButton.Content", "Redémarrer l’application");
         RestartApplicationButton.Content = L("RestartButton.Content", "Redémarrer");
@@ -190,31 +198,29 @@ public sealed partial class MainWindow : Window
 
     private string L(string key, string fallback) => ViewModel.GetText(key, fallback);
 
-    public async Task InitializeAsync(bool backgroundLaunch)
+    // startHidden is decided once by App; for a visible start, App has already activated the window.
+    public async Task InitializeAsync(bool startHidden)
     {
         await ViewModel.InitializeAsync();
         _trayIcon = new TrayIconService(
-            _windowHandle,
             () => ViewModel.IsRunning,
             () => ViewModel.StartWithWindows,
+            L,
             HandleTrayAction);
         _statusTimer.Start();
         _isInitialized = true;
 
-        if (backgroundLaunch || ViewModel.StartMinimized)
+        if (startHidden)
         {
             HideToTray();
-        }
-        else
-        {
-            RestoreAndActivate();
         }
     }
 
     public void RestoreAndActivate()
     {
         _appWindow.IsShownInSwitchers = true;
-        TrayIconService.RestoreWindow(_windowHandle);
+        ShowWindow(_windowHandle, 9); // SW_RESTORE
+        SetForegroundWindow(_windowHandle);
         Activate();
         _ = ViewModel.LogTrayEventAsync("Restauration depuis la zone de notification.");
     }
@@ -345,6 +351,7 @@ public sealed partial class MainWindow : Window
         {
             await ViewModel.MonitorEngineAsync();
             if (LogsPage.Visibility == Visibility.Visible) await ViewModel.RefreshLogsAsync();
+            if (GeneralPage.Visibility == Visibility.Visible && ViewModel.DeviceMode == DeviceMode.Selected) ViewModel.RefreshOutputDevices();
         }
         finally
         {
@@ -444,7 +451,7 @@ public sealed partial class MainWindow : Window
             var executable = Environment.ProcessPath
                 ?? throw new InvalidOperationException(ViewModel.GetText("RestartExecutableMissing", "Le chemin de l’application est introuvable."));
             AppInstance.GetCurrent().UnregisterKey();
-            Process.Start(new ProcessStartInfo(executable)
+            Process.Start(new ProcessStartInfo(executable, App.ShowArgument)
             {
                 UseShellExecute = true,
                 WorkingDirectory = AppContext.BaseDirectory
@@ -558,7 +565,21 @@ public sealed partial class MainWindow : Window
     private static extern bool ShowWindow(IntPtr window, int command);
 
     [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetForegroundWindow(IntPtr window);
+
+    [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr window);
+
+    private const int SmallIconWidthMetric = 49; // SM_CXSMICON
+    private const uint ImageIcon = 1; // IMAGE_ICON
+    private const uint LoadFromFile = 0x10; // LR_LOADFROMFILE
+
+    [DllImport("user32.dll")]
+    private static extern int GetSystemMetricsForDpi(int index, uint dpi);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr LoadImage(IntPtr instance, string name, uint type, int width, int height, uint load);
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(IntPtr window, int attribute, ref int value, int size);

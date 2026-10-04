@@ -6,7 +6,8 @@ public enum DeviceMode
     All,
     Digital,
     Analog,
-    Marked
+    Marked,
+    Selected
 }
 
 public enum SignalMode
@@ -43,10 +44,19 @@ public enum AppLanguage
     Spanish
 }
 
+// An output checked in the custom selection: the Windows endpoint ID drives the engine, the name is only displayed
+// (last name known, kept while the output is absent).
+public sealed class OutputDeviceSelection
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+}
+
 public sealed class AppSettings
 {
     public bool Enabled { get; set; }
     public DeviceMode DeviceMode { get; set; } = DeviceMode.Primary;
+    public List<OutputDeviceSelection> SelectedDevices { get; set; } = [];
     public SignalMode SignalMode { get; set; } = SignalMode.Fluctuate;
     public double FrequencyHz { get; set; } = 50;
     public double AmplitudePercent { get; set; } = 1;

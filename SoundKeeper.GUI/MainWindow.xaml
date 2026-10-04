@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:viewmodels="using:SoundKeeper.GUI.ViewModels"
     mc:Ignorable="d"
     Title="Sound Keeper GUI">
 
@@ -89,7 +90,7 @@
                                             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                                             <StackPanel VerticalAlignment="Center">
-                                                <TextBlock x:Name="DeviceModeLabel" Text="Sorties audio" Style="{StaticResource GolaboxBodyTextStyle}" />
+                                                <TextBlock x:Name="DeviceModeLabel" Text="Sorties à maintenir actives" Style="{StaticResource GolaboxBodyTextStyle}" />
                                                 <TextBlock Text="{x:Bind ViewModel.DeviceDescription, Mode=OneWay}" Style="{StaticResource GolaboxCaptionTextStyle}" Margin="0,4,0,0" />
                                             </StackPanel>
                                             <ComboBox x:Name="DeviceModeCombo" Grid.Column="1" Width="{StaticResource ControlWidthSelectWide}" VerticalAlignment="Center"
@@ -97,6 +98,23 @@
                                                       AutomationProperties.LabeledBy="{Binding ElementName=DeviceModeLabel}" />
                                         </Grid>
                                     </Border>
+                                    <!-- Sélection personnalisée: one dense row per Windows output (name + check box), no nested card -->
+                                    <ItemsControl x:Name="OutputDevicesList" ItemsSource="{x:Bind ViewModel.OutputDevices}" Visibility="{x:Bind ViewModel.SelectedDevicesVisibility, Mode=OneWay}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate><StackPanel Spacing="{StaticResource RowGap}" /></ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="viewmodels:OutputDeviceItem">
+                                                <Border Style="{StaticResource GolaboxRowCardStyle}" MinHeight="{StaticResource RowMinHeightDense}">
+                                                    <Grid Style="{StaticResource GolaboxRowGridStyle}">
+                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                        <CheckBox Content="{x:Bind Name}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" VerticalAlignment="Center" />
+                                                        <TextBlock Grid.Column="1" Text="{x:Bind StatusText}" Visibility="{x:Bind StatusVisibility}" Style="{StaticResource GolaboxCaptionTextStyle}" VerticalAlignment="Center" />
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
                                     <!-- SettingRow.Link: leaves the app, OpenInNewWindow glyph -->
                                     <Border Style="{StaticResource GolaboxRowCardStyle}">
                                         <Grid Style="{StaticResource GolaboxRowGridStyle}">
@@ -207,7 +225,7 @@
                                             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                                             <StackPanel VerticalAlignment="Center">
-                                                <TextBlock x:Name="SleepLabel" Text="Quand suspendre le moteur" Style="{StaticResource GolaboxBodyTextStyle}" />
+                                                <TextBlock x:Name="SleepLabel" Text="Pause automatique du signal" Style="{StaticResource GolaboxBodyTextStyle}" />
                                                 <TextBlock Text="{x:Bind ViewModel.SleepDescription, Mode=OneWay}" Style="{StaticResource GolaboxCaptionTextStyle}" Margin="0,4,0,0" />
                                             </StackPanel>
                                             <ComboBox x:Name="SleepCombo" Grid.Column="1" Width="{StaticResource ControlWidthSelectWide}" VerticalAlignment="Center"
@@ -273,7 +291,10 @@
                                     <Border Style="{StaticResource GolaboxRowCardStyle}">
                                         <Grid Style="{StaticResource GolaboxRowGridStyle}">
                                             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="MinimizeTrayLabel" Text="Réduire dans la zone de notification" Style="{StaticResource GolaboxBodyTextStyle}" VerticalAlignment="Center" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock x:Name="MinimizeTrayLabel" Text="Réduire dans la zone de notification" Style="{StaticResource GolaboxBodyTextStyle}" />
+                                                <TextBlock x:Name="MinimizeTrayDescription" Style="{StaticResource GolaboxCaptionTextStyle}" Margin="0,4,0,0" />
+                                            </StackPanel>
                                             <ToggleSwitch x:Name="MinimizeTrayToggle" Grid.Column="1" VerticalAlignment="Center" IsOn="{x:Bind ViewModel.MinimizeToTray, Mode=TwoWay}"
                                                           AutomationProperties.LabeledBy="{Binding ElementName=MinimizeTrayLabel}" />
                                         </Grid>
@@ -511,8 +532,8 @@
                                 <Border Style="{StaticResource GolaboxRowCardStyle}" Padding="16">
                                     <Grid ColumnSpacing="{StaticResource IconTextGap}">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                        <FontIcon Glyph="&#xE995;" FontSize="{StaticResource IconAbout}" VerticalAlignment="Top" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                                                  AutomationProperties.AccessibilityView="Raw" />
+                                        <Image Source="ms-appx:///Assets/soundkeeper-app.svg" Width="{StaticResource IconAbout}" Height="{StaticResource IconAbout}" VerticalAlignment="Top"
+                                               AutomationProperties.AccessibilityView="Raw" />
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <TextBlock Text="Sound Keeper GUI" Style="{StaticResource GolaboxSubtitleTextStyle}" />
                                             <TextBlock Text="{x:Bind ViewModel.AboutVersionText}" Style="{StaticResource GolaboxCaptionTextStyle}" IsTextSelectionEnabled="True" Margin="0,4,0,0" />

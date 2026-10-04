@@ -5,7 +5,7 @@
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>SoundKeeper.GUI</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>..\Main.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\soundkeeper.ico</ApplicationIcon>
     <Platforms>x64;ARM64</Platforms>
     <PlatformTarget>$(Platform)</PlatformTarget>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
@@ -18,7 +18,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <NeutralLanguage>fr-FR</NeutralLanguage>
     <LangVersion>latest</LangVersion>
+    <!-- Single version source: About, AssemblyVersion, FileVersion and ProductVersion (no +commit suffix). -->
     <Version>0.1.0</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <AssemblyName>SoundKeeper.GUI</AssemblyName>
     <DefaultItemExcludes>$(DefaultItemExcludes);publish\**</DefaultItemExcludes>
   </PropertyGroup>
@@ -28,11 +30,17 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.4.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Window (AppWindow.SetIcon), notification area (TrayIconService) and About icons, loaded from disk next to the executable. -->
+    <Content Include="Assets\soundkeeper.ico;Assets\soundkeeper-tray.ico;Assets\soundkeeper-app.svg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <Target Name="CopySoundKeeperEngine" AfterTargets="Build">
     <PropertyGroup>
       <EngineFile Condition="'$(Platform)' == 'x64'">$(MSBuildProjectDirectory)\..\Bin\SoundKeeper64.exe</EngineFile>
       <EngineFile Condition="'$(Platform)' == 'ARM64'">$(MSBuildProjectDirectory)\..\Bin\SoundKeeperARM64.exe</EngineFile>
     </PropertyGroup>
+    <Warning Condition="!Exists('$(EngineFile)')" Text="Moteur Sound Keeper introuvable ($(EngineFile)) : compiler d'abord SoundKeeper.vcxproj en Release|$(Platform). Le GUI est produit sans dossier Engine." />
     <MakeDir Directories="$(OutDir)Engine" Condition="Exists('$(EngineFile)')" />
     <Copy SourceFiles="$(EngineFile)" DestinationFolder="$(OutDir)Engine" SkipUnchangedFiles="true" Condition="Exists('$(EngineFile)')" />
   </Target>
@@ -49,21 +57,30 @@
 
   <Target Name="CopyWinUiResourcesToPublish" AfterTargets="Publish">
     <ItemGroup>
-      <WinUiPublishResource Include="$(TargetDir)*.xbf" />
-      <WinUiPublishResource Include="$(TargetDir)$(AssemblyName).pri" />
-      <!-- Golabox resource dictionaries merged by App.xaml (ms-appx:///Themes/*.xaml) -->
-      <WinUiThemePublishResource Include="$(TargetDir)Themes\*.xbf" />
+      <!-- One compiled .xbf per XAML file of the project (App.xaml, windows, Themes\*.xaml...), at its relative path. -->
+      <XamlPublishSource Include="@(ApplicationDefinition);@(Page)" />
       <EnginePublishResource Include="$(TargetDir)Engine\*" />
       <LocalizationPublishResource Include="$(MSBuildProjectDirectory)\Strings\**\Resources.resw" />
     </ItemGroup>
-    <Copy SourceFiles="@(WinUiPublishResource)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
-    <MakeDir Directories="$(PublishDir)Themes" Condition="'@(WinUiThemePublishResource)' != ''" />
-    <Copy SourceFiles="@(WinUiThemePublishResource)" DestinationFolder="$(PublishDir)Themes" SkipUnchangedFiles="true" />
+    <Copy
+      SourceFiles="@(XamlPublishSource->'$(TargetDir)%(RelativeDir)%(Filename).xbf')"
+      DestinationFiles="@(XamlPublishSource->'$(PublishDir)%(RelativeDir)%(Filename).xbf')"
+      SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(TargetDir)$(AssemblyName).pri" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
     <MakeDir Directories="$(PublishDir)Engine" Condition="'@(EnginePublishResource)' != ''" />
     <Copy SourceFiles="@(EnginePublishResource)" DestinationFolder="$(PublishDir)Engine" SkipUnchangedFiles="true" />
     <Copy
       SourceFiles="@(LocalizationPublishResource)"
       DestinationFiles="@(LocalizationPublishResource->'$(PublishDir)Strings\%(RecursiveDir)%(Filename)%(Extension)')"
       SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- Marks the published folder as the stable build targeted by Windows startup (StartupService.PublishedMarkerFileName). -->
+  <Target Name="MarkPublishedBuild" AfterTargets="Publish">
+    <WriteLinesToFile
+      File="$(PublishDir)$(AssemblyName).published"
+      Lines="Published build: target of the Windows startup entry."
+      Overwrite="true"
+      WriteOnlyWhenDifferent="true" />
   </Target>
 </Project>

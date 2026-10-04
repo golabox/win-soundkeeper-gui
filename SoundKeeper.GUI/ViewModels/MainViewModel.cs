@@ -1,8 +1,10 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows.Input;
 using Microsoft.UI.Xaml;
 using SoundKeeper.GUI.Models;
@@ -14,13 +16,14 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 {
     private readonly SettingsService _settingsService;
     private readonly SoundKeeperEngineService _engine;
+    private readonly AudioOutputService _audioOutputs;
     private readonly StartupService _startup;
     private readonly AppLogger _logger;
     private readonly LocalizationService _texts;
     private CancellationTokenSource? _updateCancellation;
     private CancellationTokenSource? _testCancellation;
     private Task? _testTask;
-    private AppSettings _settings = new();
+    private AppSettings _settings;
     private bool _initialized;
     private bool _isRunning;
     private bool _isBusy;
@@ -35,32 +38,40 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private LogView _logView;
     private bool _isTesting;
     private readonly RestartAttemptGuard _restartGuard = new();
-    private readonly bool _settingsProvided;
+    private IReadOnlyList<OutputDeviceRow> _outputRows = [];
+    private bool _outputEnumerationFailed;
 
     public MainViewModel(
         SettingsService settingsService,
         SoundKeeperEngineService engine,
+        AudioOutputService audioOutputs,
         StartupService startup,
         AppLogger logger,
         LocalizationService texts,
-        AppSettings? initialSettings = null)
+        AppSettings settings)
     {
         _settingsService = settingsService;
         _engine = engine;
+        _audioOutputs = audioOutputs;
         _startup = startup;
         _logger = logger;
         _texts = texts;
-        _settings = initialSettings ?? new AppSettings();
-        _settingsProvided = initialSettings is not null;
+        _settings = settings;
 
-        DeviceChoices =
+        List<ChoiceItem<DeviceMode>> deviceChoices =
         [
-            new(DeviceMode.Primary, T("DevicePrimaryLabel", "Périphérique audio principal"), T("DevicePrimaryDescription", "Suit la sortie principale de Windows.")),
-            new(DeviceMode.All, T("DeviceAllLabel", "Tous les périphériques audio"), T("DeviceAllDescription", "Maintient toutes les sorties audio actives.")),
-            new(DeviceMode.Digital, T("DeviceDigitalLabel", "Sorties numériques"), T("DeviceDigitalDescription", "Sorties S/PDIF et HDMI.")),
-            new(DeviceMode.Analog, T("DeviceAnalogLabel", "Sorties analogiques"), T("DeviceAnalogDescription", "Toutes les sorties sauf S/PDIF et HDMI.")),
-            new(DeviceMode.Marked, T("DeviceMarkedLabel", "Périphériques marqués"), T("DeviceMarkedDescription", "Utilise les sorties dont le nom contient un point d’exclamation (!)."))
+            new(DeviceMode.Primary, T("DevicePrimaryLabel", "Sortie Windows par défaut"), T("DevicePrimaryDescription", "Suit la sortie audio par défaut de Windows, même lorsqu’elle change.")),
+            new(DeviceMode.All, T("DeviceAllLabel", "Toutes les sorties"), T("DeviceAllDescription", "Maintient actives toutes les sorties audio disponibles.")),
+            new(DeviceMode.Selected, T("DeviceSelectedLabel", "Sélection personnalisée"), T("DeviceSelectedDescription", "Maintient actives uniquement les sorties cochées ci-dessous."))
         ];
+        // Former engine modes stay listed only for a configuration that already uses them.
+        if (settings.DeviceMode == DeviceMode.Digital)
+            deviceChoices.Add(new(DeviceMode.Digital, T("DeviceDigitalLabel", "Sorties numériques"), T("DeviceDigitalDescription", "Sorties S/PDIF et HDMI.")));
+        if (settings.DeviceMode == DeviceMode.Analog)
+            deviceChoices.Add(new(DeviceMode.Analog, T("DeviceAnalogLabel", "Sorties analogiques"), T("DeviceAnalogDescription", "Toutes les sorties sauf S/PDIF et HDMI.")));
+        if (settings.DeviceMode == DeviceMode.Marked)
+            deviceChoices.Add(new(DeviceMode.Marked, T("DeviceMarkedLabel", "Périphériques marqués"), T("DeviceMarkedDescription", "Utilise les sorties dont le nom contient un point d’exclamation (!).")));
+        DeviceChoices = deviceChoices;
         SignalChoices =
         [
             new(SignalMode.Fluctuate, T("SignalFluctuateLabel", "Impulsions inaudibles (recommandé)"), T("SignalFluctuateDescription", "Envoie de minuscules impulsions pour garder la sortie éveillée.")),
@@ -73,23 +84,23 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         ];
         SleepChoices =
         [
-            new(SleepBehavior.Standard, T("SleepStandardLabel", "Comportement standard"), T("SleepStandardDescription", "Laisse le moteur gérer automatiquement la veille Windows.")),
-            new(SleepBehavior.WhenLocked, T("SleepLockedLabel", "Suspendre au verrouillage"), T("SleepLockedDescription", "Arrête temporairement le signal lorsque votre session Windows est verrouillée.")),
-            new(SleepBehavior.WhenDisplayOff, T("SleepDisplayLabel", "Suspendre lorsque l’écran est éteint"), T("SleepDisplayDescription", "Arrête temporairement le signal lorsque Windows éteint l’écran.")),
-            new(SleepBehavior.WhenLockedOrDisplayOff, T("SleepBothLabel", "Suspendre dans les deux cas"), T("SleepBothDescription", "Suspend le signal dès que la session est verrouillée ou que l’écran s’éteint.")),
-            new(SleepBehavior.NeverDetectSleep, T("SleepNeverLabel", "Ignorer la détection de veille"), T("SleepNeverDescription", "Option avancée NoSleep du moteur."))
+            new(SleepBehavior.Standard, T("SleepStandardLabel", "Veille uniquement (par défaut)"), T("SleepStandardDescription", "Le signal s’arrête pendant la mise en veille du PC et reprend au réveil. Sous Windows 11, il peut empêcher la mise en veille automatique.")),
+            new(SleepBehavior.WhenLocked, T("SleepLockedLabel", "Au verrouillage de la session"), T("SleepLockedDescription", "Le signal s’arrête quand la session Windows est verrouillée (Win+L) et reprend au déverrouillage.")),
+            new(SleepBehavior.WhenDisplayOff, T("SleepDisplayLabel", "Quand l’écran s’éteint"), T("SleepDisplayDescription", "Le signal s’arrête quand Windows éteint l’écran et reprend quand il se rallume. Aide le PC à se mettre en veille automatiquement.")),
+            new(SleepBehavior.WhenLockedOrDisplayOff, T("SleepBothLabel", "Verrouillage ou écran éteint"), T("SleepBothDescription", "Le signal s’arrête quand la session est verrouillée ou que l’écran s’éteint, et reprend quand ce n’est plus le cas.")),
+            new(SleepBehavior.NeverDetectSleep, T("SleepNeverLabel", "Jamais"), T("SleepNeverDescription", "Sound Keeper ne met jamais le signal en pause, même pendant la mise en veille. Peut empêcher la veille automatique et consommer plus de batterie."))
         ];
         ThemeChoices =
         [
-            new(AppTheme.System, T("ThemeSystemLabel", "Système"), T("ThemeSystemDescription", "Suit automatiquement le thème clair ou sombre choisi dans Windows.")),
-            new(AppTheme.Light, T("ThemeLightLabel", "Clair"), T("ThemeLightDescription", "Utilise en permanence l’apparence claire.")),
-            new(AppTheme.Dark, T("ThemeDarkLabel", "Sombre"), T("ThemeDarkDescription", "Utilise en permanence l’apparence sombre."))
+            new(AppTheme.System, T("ThemeSystemLabel", "Système")),
+            new(AppTheme.Light, T("ThemeLightLabel", "Clair")),
+            new(AppTheme.Dark, T("ThemeDarkLabel", "Sombre"))
         ];
         LanguageChoices =
         [
-            new(AppLanguage.French, "Français", T("LanguageFrenchDescription", "Affiche l’interface en français après redémarrage.")),
-            new(AppLanguage.English, "English", T("LanguageEnglishDescription", "Displays the interface in English after restart.")),
-            new(AppLanguage.Spanish, "Español", T("LanguageSpanishDescription", "Muestra la interfaz en español después de reiniciar."))
+            new(AppLanguage.French, "Français"),
+            new(AppLanguage.English, "English"),
+            new(AppLanguage.Spanish, "Español")
         ];
 
         ToggleEngineCommand = new AsyncRelayCommand(ToggleEngineAsync, ReportError);
@@ -114,6 +125,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     public IReadOnlyList<ChoiceItem<SleepBehavior>> SleepChoices { get; }
     public IReadOnlyList<ChoiceItem<AppTheme>> ThemeChoices { get; }
     public IReadOnlyList<ChoiceItem<AppLanguage>> LanguageChoices { get; }
+    public ObservableCollection<OutputDeviceItem> OutputDevices { get; } = [];
 
     public ICommand ToggleEngineCommand { get; }
     public ICommand OpenAudioSettingsCommand { get; }
@@ -151,10 +163,11 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public string StatusText => IsRunning ? T("StatusRunning", "Sound Keeper actif") : T("StatusStopped", "Sound Keeper arrêté");
     public string StatusDetail => IsRunning
-        ? $"{T("PidLabel", "PID")} {_engineProcessId?.ToString() ?? "?"} · {T("UptimeLabel", "Actif depuis")} {FormatUptime()} · {T("FrequencyLabel", "Fréquence")} {FrequencyHz:g} Hz"
+        ? $"{T("PidLabel", "PID")} {_engineProcessId?.ToString() ?? "?"} · {T("UptimeLabel", "Actif depuis")} {FormatUptime()}"
+            + (FrequencyVisible ? $" · {T("FrequencyLabel", "Fréquence")} {FrequencyHz:g} Hz" : string.Empty)
         : T("StatusStoppedDetail", "Aucun signal de maintien n’est actuellement envoyé.");
     public string PrimaryActionText => IsRunning ? T("DisableButton", "Désactiver") : T("EnableButton", "Activer");
-    public string GuiVersion => Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.1.0";
+    public string GuiVersion => Assembly.GetExecutingAssembly().GetName().Version!.ToString(3);
     public string GuiArchitecture => System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
     public string AboutVersionText => string.Format(T("AboutVersionFormat", "Version {0} ({1})"), GuiVersion, GuiArchitecture);
     public string EngineVersion => _engine.EngineVersion ?? T("EngineUnavailable", "introuvable");
@@ -162,7 +175,9 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     public string SettingsPath => _settingsService.SettingsPath;
     public string EnginePathText => _engine.EnginePath ?? T("EngineUnavailable", "introuvable");
     public string CommandPreview => $"{_engine.EnginePath ?? _engine.GetType().Name} {CliArgumentBuilder.Build(_settings)}";
-    public string DeviceDescription => DeviceChoices.First(choice => choice.Value == DeviceMode).Description;
+    public string DeviceDescription => DeviceMode == DeviceMode.Selected && _settings.SelectedDevices.Count == 0
+        ? T("DeviceSelectedNoneDescription", "Aucune sortie cochée : Sound Keeper ne maintient aucune sortie active.")
+        : DeviceChoices.FirstOrDefault(choice => choice.Value == DeviceMode)?.Description ?? string.Empty;
     public string SignalDescription => SignalChoices.First(choice => choice.Value == SignalMode).Description;
     public string SleepDescription => SleepChoices.First(choice => choice.Value == SleepBehavior).Description;
     public string FrequencyDescription => SignalMode switch
@@ -205,6 +220,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     public Visibility FrequencyVisibility => FrequencyVisible ? Visibility.Visible : Visibility.Collapsed;
     public Visibility AmplitudeVisibility => AmplitudeVisible ? Visibility.Visible : Visibility.Collapsed;
     public Visibility TimingVisibility => TimingVisible ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility SelectedDevicesVisibility => DeviceMode == DeviceMode.Selected ? Visibility.Visible : Visibility.Collapsed;
     public string EffectiveLanguage => _settings.Language ?? _texts.CurrentLanguage;
     public string LanguageRestartMessage => T("LanguageRestartMessage", "Le changement de langue sera appliqué au prochain démarrage de Sound Keeper GUI.");
     public bool IsLanguageRestartPending => LocalizationService.Normalize(EffectiveLanguage) != _texts.CurrentLanguage;
@@ -291,7 +307,8 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         {
             if (_settings.DeviceMode == value) return;
             _settings.DeviceMode = value;
-            NotifySettingChanged(true, nameof(DeviceMode), nameof(DeviceModeIndex), nameof(DeviceDescription));
+            NotifySettingChanged(true, nameof(DeviceMode), nameof(DeviceModeIndex), nameof(DeviceDescription), nameof(SelectedDevicesVisibility));
+            if (value == DeviceMode.Selected) RefreshOutputDevices();
         }
     }
 
@@ -441,14 +458,21 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public async Task InitializeAsync()
     {
-        if (!_settingsProvided)
-        {
-            _settings = await _settingsService.LoadAsync();
-        }
-        _logger.Enabled = _settings.LoggingEnabled;
         _initialized = true;
         RaiseAllSettings();
         ThemeChanged?.Invoke(this, Theme);
+        if (DeviceMode == DeviceMode.Selected) RefreshOutputDevices();
+
+        // Windows startup belongs to the published build: it takes over or repairs the entry at launch,
+        // while a development build (bin\...) leaves it untouched.
+        try
+        {
+            _startup.Synchronize(_settings.StartWithWindows);
+        }
+        catch (Exception exception)
+        {
+            await _logger.WarningAsync($"Démarrage avec Windows non synchronisé: {exception.Message}");
+        }
 
         if (_settings.Enabled)
         {
@@ -592,6 +616,8 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
         _startup.SetEnabled(false);
         _settings = new AppSettings();
+        OutputDevices.Clear();
+        _outputRows = [];
         _logger.Enabled = _settings.LoggingEnabled;
         TestSignalStatus = string.Empty;
         await _settingsService.SaveAsync(_settings);
@@ -638,16 +664,35 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
+    // Never throws: quitting must not be blocked by a disk or engine error, which is logged instead.
     public async Task StopForExitAsync()
     {
+        var settingsChanged = _updateCancellation is not null;
         CancelPendingUpdate();
         _testCancellation?.Cancel();
         if (_testTask is { } testTask) await testTask;
 
-        if (IsRunning)
+        try
         {
-            await _engine.StopAsync();
-            RefreshEngineState();
+            // Saved again so that a change still inside its debounce delay is not lost.
+            if (settingsChanged) await _settingsService.SaveAsync(_settings);
+        }
+        catch (Exception exception)
+        {
+            await _logger.ErrorAsync("Paramètres non sauvegardés à la fermeture", exception);
+        }
+
+        try
+        {
+            if (IsRunning)
+            {
+                await _engine.StopAsync();
+                RefreshEngineState();
+            }
+        }
+        catch (Exception exception)
+        {
+            await _logger.ErrorAsync("Arrêt du moteur impossible à la fermeture", exception);
         }
     }
 
@@ -713,7 +758,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         var properties = new[]
         {
-            nameof(DeviceMode), nameof(DeviceModeIndex), nameof(DeviceDescription), nameof(SignalMode), nameof(SignalModeIndex), nameof(SignalDescription),
+            nameof(DeviceMode), nameof(DeviceModeIndex), nameof(DeviceDescription), nameof(SelectedDevicesVisibility), nameof(SignalMode), nameof(SignalModeIndex), nameof(SignalDescription),
             nameof(SleepBehavior), nameof(SleepBehaviorIndex), nameof(SleepDescription), nameof(Theme), nameof(ThemeIndex), nameof(FrequencyHz), nameof(FrequencyDescription),
             nameof(AmplitudePercent), nameof(PlaySeconds), nameof(WaitSeconds), nameof(FadeSeconds),
             nameof(AllowRemoteAudio), nameof(StartWithWindows), nameof(StartMinimized), nameof(MinimizeToTray),
@@ -803,6 +848,47 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
+    // Simple hotplug handling: called at startup, when the custom selection opens and by the window's status timer.
+    public void RefreshOutputDevices()
+    {
+        IReadOnlyList<AudioOutput> outputs;
+        try
+        {
+            outputs = _audioOutputs.GetActiveOutputs();
+            _outputEnumerationFailed = false;
+        }
+        catch (COMException exception)
+        {
+            if (!_outputEnumerationFailed) _ = _logger.WarningAsync($"Sorties audio Windows illisibles: {exception.Message}");
+            _outputEnumerationFailed = true;
+            return;
+        }
+
+        if (OutputDeviceCatalog.UpdateNames(_settings.SelectedDevices, outputs))
+        {
+            NotifySettingChanged(false, nameof(DiagnosticText));
+        }
+
+        var rows = OutputDeviceCatalog.BuildRows(outputs, _settings.SelectedDevices);
+        if (rows.SequenceEqual(_outputRows)) return;
+        _outputRows = rows;
+        OutputDevices.Clear();
+        foreach (var row in rows)
+        {
+            var name = row.Name.Length > 0 ? row.Name : T("DeviceUnnamed", "Sortie audio");
+            OutputDevices.Add(new OutputDeviceItem(row, name, T("DeviceUnavailable", "Indisponible"), OnOutputSelectionChanged));
+        }
+    }
+
+    private void OnOutputSelectionChanged(OutputDeviceItem item)
+    {
+        _settings.SelectedDevices.RemoveAll(device => OutputDeviceCatalog.SameId(device.Id, item.Id));
+        if (item.IsSelected) _settings.SelectedDevices.Add(new OutputDeviceSelection { Id = item.Id, Name = item.Name });
+        // Keeps the displayed rows as they are; the next refresh only drops an absent output that was just unchecked.
+        _outputRows = _outputRows.Select(row => OutputDeviceCatalog.SameId(row.Id, item.Id) ? row with { IsSelected = item.IsSelected } : row).ToList();
+        NotifySettingChanged(true, nameof(DeviceDescription), nameof(DiagnosticText));
+    }
+
     private string BuildDiagnosticText()
     {
         var yes = T("Yes", "Oui");
@@ -823,8 +909,11 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             "Engine",
             Line("Version", EngineVersion),
             Line("State", IsRunning ? "Running" : "Stopped"),
+            Line("Outputs", DeviceMode == DeviceMode.Selected
+                ? $"Selected ({_settings.SelectedDevices.Count}) {string.Join(", ", _settings.SelectedDevices.Select(device => device.Name))}"
+                : DeviceMode.ToString()),
             Line("PID", _engineProcessId?.ToString() ?? "N/A"),
-            Line("Frequency", $"{FrequencyHz:g} Hz"),
+            Line("Frequency", FrequencyVisible ? $"{FrequencyHz:g} Hz" : "N/A"),
             Line("Path", _engine.EnginePath ?? "N/A"));
     }
 

@@ -4,10 +4,15 @@
   <resheader name="version"><value>2.0</value></resheader>
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
-  <data name="DevicePrimaryLabel" xml:space="preserve"><value>Primary audio device</value></data>
-  <data name="DevicePrimaryDescription" xml:space="preserve"><value>Follows the primary Windows audio output.</value></data>
-  <data name="DeviceAllLabel" xml:space="preserve"><value>All audio devices</value></data>
-  <data name="DeviceAllDescription" xml:space="preserve"><value>Keeps every enabled audio output active.</value></data>
+  <data name="DevicePrimaryLabel" xml:space="preserve"><value>Windows default output</value></data>
+  <data name="DevicePrimaryDescription" xml:space="preserve"><value>Follows the Windows default audio output, even when it changes.</value></data>
+  <data name="DeviceAllLabel" xml:space="preserve"><value>All outputs</value></data>
+  <data name="DeviceAllDescription" xml:space="preserve"><value>Keeps every available audio output active.</value></data>
+  <data name="DeviceSelectedLabel" xml:space="preserve"><value>Custom selection</value></data>
+  <data name="DeviceSelectedDescription" xml:space="preserve"><value>Keeps only the outputs checked below active.</value></data>
+  <data name="DeviceSelectedNoneDescription" xml:space="preserve"><value>No output checked: Sound Keeper keeps no output active.</value></data>
+  <data name="DeviceUnavailable" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="DeviceUnnamed" xml:space="preserve"><value>Audio output</value></data>
   <data name="DeviceDigitalLabel" xml:space="preserve"><value>Digital outputs</value></data>
   <data name="DeviceDigitalDescription" xml:space="preserve"><value>S/PDIF and HDMI outputs.</value></data>
   <data name="DeviceAnalogLabel" xml:space="preserve"><value>Analog outputs</value></data>
@@ -25,13 +30,13 @@
   <data name="SignalWhiteLabel" xml:space="preserve"><value>White noise</value></data>
   <data name="SignalBrownLabel" xml:space="preserve"><value>Brown noise</value></data>
   <data name="SignalPinkLabel" xml:space="preserve"><value>Pink noise</value></data>
-  <data name="SleepStandardLabel" xml:space="preserve"><value>Standard behavior</value></data>
-  <data name="SleepStandardDescription" xml:space="preserve"><value>Lets the engine handle Windows sleep automatically.</value></data>
-  <data name="SleepLockedLabel" xml:space="preserve"><value>Suspend when locked</value></data>
-  <data name="SleepDisplayLabel" xml:space="preserve"><value>Suspend when the display is off</value></data>
-  <data name="SleepBothLabel" xml:space="preserve"><value>Suspend in both cases</value></data>
-  <data name="SleepNeverLabel" xml:space="preserve"><value>Ignore sleep detection</value></data>
-  <data name="SleepNeverDescription" xml:space="preserve"><value>Advanced NoSleep engine option.</value></data>
+  <data name="SleepStandardLabel" xml:space="preserve"><value>PC sleep only (default)</value></data>
+  <data name="SleepStandardDescription" xml:space="preserve"><value>The signal stops while the PC is asleep and resumes when it wakes up. On Windows 11, it may prevent automatic sleep.</value></data>
+  <data name="SleepLockedLabel" xml:space="preserve"><value>When the session is locked</value></data>
+  <data name="SleepDisplayLabel" xml:space="preserve"><value>When the screen turns off</value></data>
+  <data name="SleepBothLabel" xml:space="preserve"><value>Locked or screen off</value></data>
+  <data name="SleepNeverLabel" xml:space="preserve"><value>Never</value></data>
+  <data name="SleepNeverDescription" xml:space="preserve"><value>Sound Keeper never pauses the signal, not even during sleep. May prevent automatic sleep and use more battery.</value></data>
   <data name="ThemeSystemLabel" xml:space="preserve"><value>System</value></data>
   <data name="ThemeLightLabel" xml:space="preserve"><value>Light</value></data>
   <data name="ThemeDarkLabel" xml:space="preserve"><value>Dark</value></data>
@@ -43,7 +48,7 @@
   <data name="EngineUnavailable" xml:space="preserve"><value>not found</value></data>
   <data name="EngineLabel" xml:space="preserve"><value>Engine</value></data>
   <data name="DevicesTitle.Text" xml:space="preserve"><value>Devices</value></data>
-  <data name="DeviceModeCombo.Header" xml:space="preserve"><value>Audio outputs</value></data>
+  <data name="DeviceModeCombo.Header" xml:space="preserve"><value>Outputs to keep active</value></data>
   <data name="OpenAudioText.Text" xml:space="preserve"><value>Windows sound settings</value></data>
   <data name="SignalTitle.Text" xml:space="preserve"><value>Operating mode</value></data>
   <data name="SignalModeCombo.Header" xml:space="preserve"><value>Signal</value></data>
@@ -55,7 +60,7 @@
   <data name="AudibleWarning.Title" xml:space="preserve"><value>Caution</value></data>
   <data name="AudibleWarning.Message" xml:space="preserve"><value>A high frequency or amplitude can produce an audible sound.</value></data>
   <data name="SleepTitle.Text" xml:space="preserve"><value>Sleep and lock</value></data>
-  <data name="SleepCombo.Header" xml:space="preserve"><value>When to suspend the engine</value></data>
+  <data name="SleepCombo.Header" xml:space="preserve"><value>Automatic signal pause</value></data>
   <data name="WindowsTitle.Text" xml:space="preserve"><value>Windows behavior</value></data>
   <data name="StartupToggle.Header" xml:space="preserve"><value>Launch at Windows startup</value></data>
   <data name="StartMinimizedToggle.Header" xml:space="preserve"><value>Start minimized</value></data>
@@ -100,7 +105,7 @@
   <data name="AboutEngineTitle.Text" xml:space="preserve"><value>Sound Keeper engine</value></data>
   <data name="AboutEngineDescription.Text" xml:space="preserve"><value>This application uses the Sound Keeper engine created by Evgeny Vrublevsky and distributed under the MIT License.</value></data>
   <data name="AboutGuiTitle.Text" xml:space="preserve"><value>GUI project</value></data>
-  <data name="AboutGuiDescription.Text" xml:space="preserve"><value>An independent Windows interface that controls Sound Keeper without modifying its engine.</value></data>
+  <data name="AboutGuiDescription.Text" xml:space="preserve"><value>An independent Windows interface that controls the Sound Keeper engine.</value></data>
   <data name="OpenDocumentationButton.Content" xml:space="preserve"><value>Documentation</value></data>
   <data name="AboutCopyDiagnosticButton.Content" xml:space="preserve"><value>Copy system information</value></data>
   <data name="LoggingActive" xml:space="preserve"><value>Logging enabled</value></data>
@@ -109,15 +114,9 @@
   <data name="SignalWhiteDescription" xml:space="preserve"><value>Uniform, clearly audible noise covering all frequencies.</value></data>
   <data name="SignalBrownDescription" xml:space="preserve"><value>Softer, deeper audible noise with more low-frequency energy.</value></data>
   <data name="SignalPinkDescription" xml:space="preserve"><value>Audible noise balanced per octave, often more natural than white noise.</value></data>
-  <data name="SleepLockedDescription" xml:space="preserve"><value>Temporarily stops the signal while your Windows session is locked.</value></data>
-  <data name="SleepDisplayDescription" xml:space="preserve"><value>Temporarily stops the signal when Windows turns the display off.</value></data>
-  <data name="SleepBothDescription" xml:space="preserve"><value>Suspends the signal when the session is locked or the display turns off.</value></data>
-  <data name="ThemeSystemDescription" xml:space="preserve"><value>Automatically follows the light or dark theme selected in Windows.</value></data>
-  <data name="ThemeLightDescription" xml:space="preserve"><value>Always uses the light appearance.</value></data>
-  <data name="ThemeDarkDescription" xml:space="preserve"><value>Always uses the dark appearance.</value></data>
-  <data name="LanguageFrenchDescription" xml:space="preserve"><value>Displays the interface in French after restart.</value></data>
-  <data name="LanguageEnglishDescription" xml:space="preserve"><value>Displays the interface in English after restart.</value></data>
-  <data name="LanguageSpanishDescription" xml:space="preserve"><value>Displays the interface in Spanish after restart.</value></data>
+  <data name="SleepLockedDescription" xml:space="preserve"><value>The signal stops while your Windows session is locked (Win+L) and resumes when you unlock it.</value></data>
+  <data name="SleepDisplayDescription" xml:space="preserve"><value>The signal stops when Windows turns the screen off and resumes when it turns back on. Helps the PC go to sleep automatically.</value></data>
+  <data name="SleepBothDescription" xml:space="preserve"><value>The signal stops when the session is locked or the screen turns off, and resumes once neither is the case.</value></data>
   <data name="FluctuateFrequencyDescription" xml:space="preserve"><value>{0:g} Hz sets the keep-alive signal rate ({0:g} tiny pulses per second), not the device sample rate. The engine’s recommended value is usually sufficient and normally inaudible.</value></data>
   <data name="SineFrequencyDescription" xml:space="preserve"><value>{0:g} Hz is the signal frequency, not the device sample rate. Between roughly 20 and 20,000 Hz it may be heard depending on amplitude; the engine’s recommended values are usually sufficient.</value></data>
   <data name="TestSelectedSignalDescription" xml:space="preserve"><value>Plays the selected signal for 3 seconds at an audible level, then restores your configuration.</value></data>
@@ -138,9 +137,10 @@
   <data name="ErrorBar.Title" xml:space="preserve"><value>An error occurred</value></data>
   <data name="RestartNowButton.Content" xml:space="preserve"><value>Restart now</value></data>
   <data name="RestartApplicationButton.Content" xml:space="preserve"><value>Restart the application</value></data>
-  <data name="StartMinimizedDescription" xml:space="preserve"><value>Applies to manual launches; at Windows startup the app always starts minimized.</value></data>
+  <data name="StartMinimizedDescription" xml:space="preserve"><value>When the app opens, the window stays hidden in the notification area. This is always the case at Windows startup.</value></data>
+  <data name="MinimizeTrayDescription" xml:space="preserve"><value>Hides the window in the notification area when you minimize it.</value></data>
   <data name="CloseTrayDescription" xml:space="preserve"><value>The close button hides the window instead of exiting the app.</value></data>
-  <data name="AutoRestartDescription" xml:space="preserve"><value>Up to 3 attempts per minute; beyond that, automatic restart is suspended.</value></data>
+  <data name="AutoRestartDescription" xml:space="preserve"><value>Up to 3 attempts per minute; beyond that, Sound Keeper stays stopped until you enable it again.</value></data>
   <data name="ToggleOn" xml:space="preserve"><value>On</value></data>
   <data name="ToggleOff" xml:space="preserve"><value>Off</value></data>
   <data name="MaintenanceTitle" xml:space="preserve"><value>Maintenance</value></data>
@@ -171,4 +171,6 @@
   <data name="ClearLogsConfirmButton" xml:space="preserve"><value>Clear</value></data>
   <data name="AboutVersionFormat" xml:space="preserve"><value>Version {0} ({1})</value></data>
   <data name="SourceCodeLabel" xml:space="preserve"><value>Interface source code</value></data>
+  <data name="TrayOpen" xml:space="preserve"><value>Open</value></data>
+  <data name="TrayExit" xml:space="preserve"><value>Exit</value></data>
 </root>

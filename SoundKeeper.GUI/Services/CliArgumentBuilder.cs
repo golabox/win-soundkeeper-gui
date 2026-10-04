@@ -16,6 +16,7 @@ public static class CliArgumentBuilder
                 DeviceMode.Digital => "digital",
                 DeviceMode.Analog => "analog",
                 DeviceMode.Marked => "marked",
+                DeviceMode.Selected => "selected",
                 _ => throw new ArgumentOutOfRangeException(nameof(settings.DeviceMode))
             },
             settings.SignalMode switch
@@ -30,6 +31,16 @@ public static class CliArgumentBuilder
                 _ => throw new ArgumentOutOfRangeException(nameof(settings.SignalMode))
             }
         };
+
+        if (settings.DeviceMode == DeviceMode.Selected)
+        {
+            // Endpoint IDs contain no space or quote: anything else could inject other engine arguments.
+            arguments.InsertRange(1, settings.SelectedDevices
+                .Select(device => device.Id)
+                .Where(id => id.Length > 0 && !id.Any(character => char.IsWhiteSpace(character) || character == '"'))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Select(id => $"device={id}"));
+        }
 
         AddSignalParameters(arguments, settings);
 

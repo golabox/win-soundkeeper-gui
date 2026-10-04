@@ -16,6 +16,7 @@ public static class AudioTestSettingsFactory
         return new AppSettings
         {
             DeviceMode = settings.DeviceMode,
+            SelectedDevices = [.. settings.SelectedDevices],
             SignalMode = audibleMode,
             FrequencyHz = frequency,
             AmplitudePercent = Math.Max(10, settings.AmplitudePercent),

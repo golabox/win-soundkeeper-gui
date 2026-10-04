@@ -2,7 +2,7 @@
 
 #include "Common.hpp"
 
-enum class KeepDeviceType { None, Primary, Marked, Digital, Analog, All };
+enum class KeepDeviceType { None, Primary, Marked, Digital, Analog, All, Selected };
 enum class KeepStreamType { None, Zero, Fluctuate, Sine, WhiteNoise, BrownNoise, PinkNoise };
 
 class CSoundKeeper;
@@ -55,6 +55,7 @@ protected:
 	bool                    m_cfg_sleep_with_display = false;
 	bool                    m_cfg_sleep_with_user_lock = false;
 	KeepDeviceType          m_cfg_device_type = KeepDeviceType::Primary;
+	LPWSTR                  m_cfg_device_ids = nullptr; // Selected: null-terminated IDs, ended by an empty string.
 	KeepStreamType          m_cfg_stream_type = KeepStreamType::Zero;
 	double                  m_cfg_frequency = 0.0;
 	double                  m_cfg_amplitude = 0.0;
@@ -66,6 +67,7 @@ protected:
 	HRESULT Stop();
 	HRESULT Restart();
 	CSoundSession* FindSession(LPCWSTR device_id);
+	bool IsDeviceSelected(IMMDevice* device);
 
 	static ULONG CALLBACK SuspendResumeCallbackEntry(PVOID Context, ULONG Type, PVOID Setting);
 	ULONG SuspendResumeCallback(ULONG Type);
@@ -113,6 +115,7 @@ public:
 	void FireShutdown();
 
 	void ParseStreamArgs(KeepStreamType stream_type, const char* args);
+	void ParseDeviceIds(const char* args);
 	void ParseModeString(const char* args);
 	HRESULT Main();
 	static HRESULT MainEntry();
